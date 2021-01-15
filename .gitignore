@@ -1,3 +1,5 @@
 /covid_data/
-/dags/__pycache__
-.DS_Store
+__pycache__
+.*
+!/.env
+/airflow

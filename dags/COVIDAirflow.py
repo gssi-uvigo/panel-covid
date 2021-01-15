@@ -17,7 +17,7 @@ from airflow.operators.dummy import DummyOperator
 # endregion
 
 # region Airflow DAG definition
-from subdags.DataDownload import DataDownloadTaskGroup
+from taskgroups.GoogleDatasets import GoogleDatasetsTaskGroup
 
 dag_name = 'COVIDWorkflow'
 start_date = dt(2021, 1, 1)
@@ -41,12 +41,12 @@ os.chdir('/home/airflow/covid')  # download the datasets into subfolders of the 
 dummy_start_op = DummyOperator(task_id='start', dag=dag)
 dummy_end_op = DummyOperator(task_id='end', dag=dag)
 
-download_data_op_group = DataDownloadTaskGroup(dag)
+google_data = GoogleDatasetsTaskGroup(dag)
 
 # endregion
 
 # region Airflow pipeline definition
 
-dummy_start_op >> download_data_op_group >> dummy_end_op
+dummy_start_op >> google_data >> dummy_end_op
 
 # endregion

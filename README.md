@@ -1,5 +1,6 @@
 # Dashboard COVID-19 España
-*Guillermo Barreiro Fernández* <br>
+*Guillermo Barreiro Fernández*
+
 *atlanTTic, Universidade de Vigo*
 
 Este proyecto pretende recopilar toda la información disponible públicamente sobre la evolución de la pandemia del COVID-19 en España, con el fin de poder analizarla y mostrar los resultados al público, de manera objetiva, sencilla y visualmente atractiva.
@@ -13,6 +14,12 @@ La descarga y extracción de los datos está implementada con [Apache Airflow](h
 `docker-compose build`
 
 `docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run airflow-db-initializer`
+
+`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run airflow-mongodb-setup`
+
+`docker-compose up`
+
+`docker exec covid-dashboard_airflow-scheduler airflow users create --username admin --firstname`  *Tu nombre* `--lastname` *Tu apellido* `--role Admin --email` *Tu email*
 
 ### Lanzamiento de los contenedores:
 `docker-compose up`

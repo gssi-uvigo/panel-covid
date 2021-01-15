@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  airflow-db-initializer:
+    image: apache/airflow:2.0.0
+    command: db init
+    depends_on: 
+      - airflow-backend
+    networks: 
+      - airflow
+    volumes:
+      - ./airflow:/opt/airflow/
+    env_file:
+      - mysql.env

@@ -1,0 +1,65 @@
+version: "3.9"
+services:
+  airflow-backend:
+    image: mysql:latest
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    networks: 
+      - airflow
+    volumes:
+      - "airflow-backend:/var/lib/mysql"
+    env_file:
+      - ./docker/mysql.env
+    
+  airflow-scheduler:
+    build: ./docker/airflow
+    command: scheduler
+    depends_on: 
+      - airflow-backend
+      - airflow-database
+    restart: always
+    networks: 
+      - airflow
+    volumes:
+      - "airflow-engine:/opt/airflow"
+      - "./dags:/opt/airflow/dags"
+      - "./covid_data:/home/airflow/covid"
+    env_file:
+      - ./docker/mysql.env
+
+  airflow-webserver:
+    build: airflow
+    command: webserver
+    depends_on: 
+      - airflow-backend
+      - airflow-database
+    restart: always
+    networks: 
+      - airflow
+    volumes:
+      - "airflow-engine:/opt/airflow"
+      - "./dags:/opt/airflow/dags"
+      - "./covid_data:/home/airflow/covid"
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./docker/mysql.env  
+
+  airflow-database:
+    image: mongodb:latest
+    restart: always
+    ports:
+      - "12345:27017"
+    networks:
+      - airflow
+    volumes:
+      - "airflow-database:/data/db"
+    env_file:
+      - ./docker/mongodb.env
+
+networks:
+  airflow:
+volumes:
+  airflow-backend:
+  airflow-engine:
+  airflow-database:

@@ -29,8 +29,6 @@ class GoogleMobilityDataset(CSVDataset):
                                'residential_percent_change_from_baseline': 'residential'}
 
     def __process_dataset__(self):
-        print("Reading and processing Google Mobility dataset...")
-
         google_mobility_df = self.df
         google_mobility_df.drop(
             columns=['country_region_code', 'country_region', 'sub_region_2', 'metro_area', 'iso_3166_2_code',

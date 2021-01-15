@@ -1,2 +1,3 @@
 FROM apache/airflow:2.0.0
-RUN pip install --no-cache-dir --user bs4 pandas pandas numpy PyPDF2 pymongo
+RUN pip install 'apache-airflow[mongo]'
+RUN pip install beautifulsoup4 pandas PyPDF2

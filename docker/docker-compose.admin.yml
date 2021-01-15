@@ -1,8 +1,8 @@
 version: "3.8"
 services:
   airflow-db-initializer:
-    image: apache/airflow:2.0.0
-    command: db init
+    build: ./docker/airflow
+    command: db upgrade
     depends_on: 
       - airflow-backend
     networks: 
@@ -10,4 +10,16 @@ services:
     volumes:
       - ./airflow:/opt/airflow/
     env_file:
-      - mysql.env
+      - ./docker/mysql.env
+
+  airflow-mongodb-setup:
+    build: ./docker/airflow
+    command: connections add --conn-type mongo --conn-description 'Connection to the MongoDB datastore' --conn-host airflow-database --conn-login airflow_user --conn-password contrasenha123 --conn-schema covid_extracted_data mongo_covid
+    depends_on: 
+      - airflow-backend
+    networks: 
+      - airflow
+    volumes:
+      - "airflow-engine:/opt/airflow"
+    env_file:
+      - ./docker/mysql.env

@@ -24,7 +24,7 @@ from taskgroups.PDFRenave import PDFRenaveTaskGroup
 
 dag_name = 'COVIDWorkflow'
 start_date = dt(2021, 1, 1)
-default_args = {'owner': 'airflow', 'retries': 3, 'retry_delay': td(seconds=30)}
+default_args = {'owner': 'airflow', 'retries': 2, 'retry_delay': td(seconds=30)}
 
 dag = DAG(
     dag_name,

@@ -97,5 +97,5 @@ class GoogleDatasetsTaskGroup(TaskGroup):
     def process_google_mobility():
         """Process and store the Google mobility dataset in the database"""
         mobility_google = GoogleMobilityDataset('csv_data/google_mobility.csv')
-        database = MongoDatabase()
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
         mobility_google.store_dataset(database, 'google_mobility')

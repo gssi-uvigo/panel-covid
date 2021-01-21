@@ -290,6 +290,7 @@ class PDFMhealthTaskGroup(TaskGroup):
 
     reports_directory = 'mhealth_reports'
     processed_reports_directory = reports_directory + '/processed'
+    mongo_collection_name = 'covid_extracted_data'
 
     def __init__(self, dag):
         # Instantiate the TaskGroup
@@ -371,7 +372,7 @@ class PDFMhealthTaskGroup(TaskGroup):
         documents_diagnostic_tests = []
         documents_hospitals_pressure = []
         documents_outbreaks_description = []
-        database = MongoDatabase()
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
 
         # Read the processed reports
         processed_reports_files = os.listdir(PDFMhealthTaskGroup.processed_reports_directory)

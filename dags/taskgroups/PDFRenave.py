@@ -381,7 +381,7 @@ class PDFRenaveTaskGroup(TaskGroup):
         reports = []
         documents_clinic_description = []
         documents_transmission_indicators = []
-        database = MongoDatabase()
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
 
         # Read the processed reports
         processed_reports_files = os.listdir(PDFRenaveTaskGroup.processed_reports_directory)

@@ -13,13 +13,11 @@ La descarga y extracción de los datos está implementada con [Apache Airflow](h
 
 `docker-compose build`
 
-`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run airflow-db-initializer`
-
-`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run airflow-mongodb-setup`
+`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run airflow-initializer`
 
 `docker-compose up`
 
-`docker exec covid-dashboard_airflow-scheduler airflow users create --username admin --firstname`  *Tu nombre* `--lastname` *Tu apellido* `--role Admin --email` *Tu email*
+`docker exec -it covid-dashboard_airflow-scheduler_1 airflow users create --username admin --firstname`  *Tu nombre* `--lastname` *Tu apellido* `--role Admin --email` *Tu email*
 
 ### Lanzamiento de los contenedores:
 `docker-compose up`
@@ -53,20 +51,25 @@ Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará un
     - Provincias españolas agrupadas por Comunidad Autónoma: [descargar en CSV](https://gist.githubusercontent.com/gbarreiro/7e5c5eb906e9160182f81b8ec868bf64/raw/8812c03a94edc69f77a6c94312e40a05b0c19583/provincias_espa%25C3%25B1a.csv)
 
 ## Datos disponibles en la base de datos
-- **Datos COVID**:
-    - `cases`: Casos diarios y totales por día, Comunidad Autónoma y rango de edad.
-    - `deaths`: Muertes diarias y totales por día, Comunidad Autónoma y rango de edad.
-    - `hospitalized_cases`: Hospitalizaciones diarias y totales por día, Comunidad Autónoma y rango de edad.
-    - `hospitals_pressure`: Presión hospitalaria por día y Comunidad Autónoma: número de pacientes ingresados, porcentaje de ocupación de camas, número de ingresos y número de altas.
-    - `diagnostic_tests`: Número de pruebas diagnósticas realizadas por día, tasa por cada 100000 y positividad. Datos diarios por Comunidad Autónoma.
-    - `transmission_indicators`: Porcentaje de casos asintomáticos, días hasta diagnóstico (mediana y rango intercuartil), contactos estrechos identificados por caso (mediana y rango intercuartil) y casos sin contacto estrecho conocido (número y porcentaje) por Comunidad Autónoma.
-    - `outbreaks_description`: Número de brotes y casos acumulados por ámbito.
-- **Datos adicionales**:
-    - `death_causes`: Número de personas fallecidas en España en 2018 por causa, sexo y rango de edad.
-    - `chronic_illnesses`: Porcentaje de población mayor de 15 años que en 2017 sufría una enfermedad crónica. Datos clasificados por sexo y enfermedad.
-    - `google_mobility`: Porcentaje de variación de la movilidad de los ciudadanos respecto a la media por día, Comunidad Autónoma y tipo de desplazamiento.
-    - `population_ar`: Población española por Comunidad Autónoma, sexo y rango de edad.
-    - `weather_ar`: Temperatura, precipitaciones y luz solar diarios por Comunidad Autónoma.
+- *covid_extracted_data*:
+    - **Datos COVID**:
+        - `daily_data`: Casos, hospitalizaciones y fallecimientos diarios y totales por día, sexo, Comunidad Autónoma y rango de edad.
+        - `hospitals_pressure`: Presión hospitalaria por día y Comunidad Autónoma: número de pacientes ingresados, porcentaje de ocupación de camas, número de ingresos y número de altas.
+        - `diagnostic_tests`: Número de pruebas diagnósticas realizadas por día, tasa por cada 100000 y positividad. Datos diarios por Comunidad Autónoma.
+        - `transmission_indicators`: Porcentaje de casos asintomáticos, días hasta diagnóstico (mediana y rango intercuartil), contactos estrechos identificados por caso (mediana y rango intercuartil) y casos sin contacto estrecho conocido (número y porcentaje) por Comunidad Autónoma.
+        - `outbreaks_description`: Número de brotes y casos acumulados por ámbito.
+    - **Datos adicionales**:
+        - `death_causes`: Número de personas fallecidas en España en 2018 por causa, sexo y rango de edad.
+        - `chronic_illnesses`: Porcentaje de población mayor de 15 años que en 2017 sufría una enfermedad crónica. Datos clasificados por sexo y enfermedad.
+        - `google_mobility`: Porcentaje de variación de la movilidad de los ciudadanos respecto a la media por día, Comunidad Autónoma y tipo de desplazamiento.
+        - `population_ar`: Población española por Comunidad Autónoma, sexo y rango de edad.
+        - `weather_ar`: Temperatura, precipitaciones y luz solar diarios por Comunidad Autónoma.+
+
+- *covid_analyzed_data*: *mongodb://data_read:givemesomedata@localhost:12345/covid_admin*
+    - `cases`: Casos nuevos y totales, por 100 000 habitantes, incidencia acumulada, media móvil, incremento diario, semanal y mensual... Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
+    - `deaths`: Fallecimientos nuevos y totales, por 100 000 habitantes, media móvil, incremento diario, semanal y mensual y tasa de mortalidad (últimas 2 semanas y total). Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
+    - `hospitalizations`: Hospitalizaciones nuevas y totales, por 100 000 habitantes, media móvil, incremento diario, semanal y mensual y tasa de hospitalización (últimas 2 semanas y total). Datos para UCI y total. Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
+    - `death_causes`: Número de personas fallecidas en España en 2018 por cada una de las 10 causas de muerte más letales en España, junto con el número de personas fallecidas de COVID-19 en 2020.
 
 
 ## Librerías utilizadas

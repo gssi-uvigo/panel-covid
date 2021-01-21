@@ -23,27 +23,41 @@ class MongoDatabase:
         'population_ar': [('autonomous_region', ASCENDING)],
         'death_causes': [('death_cause', ASCENDING), ('age_range', ASCENDING)],
         'chronic_illnesses': [('illness', ASCENDING)],
-        'outbreaks_description': [('date', DESCENDING), ('scope', ASCENDING), ('subscope', ASCENDING)]
+        'outbreaks_description': [('date', DESCENDING), ('scope', ASCENDING), ('subscope', ASCENDING)],
+        'top_death_causes': [('death_cause', ASCENDING)]
     }
 
-    def __init__(self):
+    extracted_db_name = 'covid_extracted_data'
+    analyzed_db_name = 'covid_analyzed_data'
+
+    def __init__(self, database_name):
         """
             Connect to the database.
         """
         self.client = MongoHook(conn_id='mongo_covid').get_conn()
-        self.db = self.client.get_database()
+        self.db = self.client.get_database(database_name)
 
     @staticmethod
     def create_collection_index(collection):
-        """Create the index for a collection"""
-        if not collection.list_indexes():
+        """Create a custom index for a collection, to improve I/O tasks"""
+        if len(list(collection.list_indexes())) < 2:
             # Not index created yet, let's create it
             if collection.name in MongoDatabase.collection_indexes:
-                indexes = MongoDatabase.collection_indexes[collection.name]
+                index = MongoDatabase.collection_indexes[collection.name]
             else:
-                indexes = MongoDatabase.collection_indexes['default']
+                index = MongoDatabase.collection_indexes['default']
 
-            collection.create_indexes(indexes)
+            collection.create_index(index)
+
+    def read_data(self, collection_name, filters=None):
+        """
+            Read data from the database and return it as a DataFrame.
+            :param collection_name: Name of the collection from which the data will be read
+            :param filters: (optional) Dictionary with the query filters.
+        """
+        collection = self.db.get_collection(collection_name)
+        query = collection.find(filters)
+        return pd.DataFrame(query)
 
     def store_data(self, collection_name, data, overwrite=True):
         """

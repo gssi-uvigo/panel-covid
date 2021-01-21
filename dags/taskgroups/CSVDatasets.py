@@ -40,6 +40,10 @@ class DailyCOVIDData(CSVDataset):
                      'num_uci': 'new_ic_hospitalizations'})
         provinces_df = provinces_df.rename(columns={'iso': 'province', 'comunidad autónoma': 'autonomous_region'})
 
+        # Translate the gender codes
+        gender_translations = {'H': 'M', 'M': 'F', 'NC': 'unknown'}
+        df['gender'] = df['gender'].replace(gender_translations)
+
         # Replace provinces with Autonomous Regions
         df = pd.merge(df, provinces_df, on='province')
         df = df.drop(columns=['province'])
@@ -82,8 +86,6 @@ class ARPopulationCSVDataset(CSVDataset):
             for x, y in population_ar_mongo.items()]
 
         self.mongo_data = population_ar_mongo
-
-        print("Population CSV processed")
 
 
 class AEMETWeatherDataset:
@@ -295,16 +297,16 @@ class CSVDatasetsTaskGroup(TaskGroup):
     @staticmethod
     def download_aemet_data():
         """
-            To get the AEMET weather data, multiple calls to the AEMET REST API have to be made, in 30-days time windows,
-            hence the download and store process requires some more steps than with the other datasets.
+            To get the AEMET weather data, multiple calls to the AEMET REST API have to be made, in 30-days time
+            windows, hence the download and store process requires some more steps than with the other datasets.
         """
         # Base URL, endpoint URL and API key definition
         aemet_base_url = 'https://opendata.aemet.es/opendata'
         aemet_weather_endpoint = '/api/valores/climatologicos/diarios/datos/fechaini/{fechaIniStr}/fechafin/{' \
                                  'fechaFinStr}/todasestaciones'
         aemet_api_key = 'eyJhbGciOiJIUzI1NiJ9' \
-                        '.eyJzdWIiOiJndWlsbGVybW8uYmFycmVpcm9AZGV0LnV2aWdvLmVzIiwianRpIjoiOTYwNjA3NGQtNjBmYy00MWE4LThl' \
-                        'MzQtMGNiY2MzODkzYmRiIiwiaXNzIjoiQUVNRVQiLCJpYXQiOjE2MDY4MzY1NjcsInVzZXJJZCI6Ijk2MDYwNzRkLTYwZ' \
+                        '.eyJzdWIiOiJndWlsbGVybW8uYmFycmVpcm9AZGV0LnV2aWdvLmVzIiwianRpIjoiOTYwNjA3NGQtNjBmYy00MWE4LThl'\
+                        'MzQtMGNiY2MzODkzYmRiIiwiaXNzIjoiQUVNRVQiLCJpYXQiOjE2MDY4MzY1NjcsInVzZXJJZCI6Ijk2MDYwNzRkLTYwZ'\
                         'mMtNDFhOC04ZTM0LTBjYmNjMzg5M2JkYiIsInJvbGUiOiIifQ.JyL4G-tCZZIWRsJp5HBOMNdkPWE1rTS3vTkBu2CdI6c'
 
         # The data will be returned in JSON format
@@ -370,31 +372,31 @@ class CSVDatasetsTaskGroup(TaskGroup):
     @staticmethod
     def process_and_store_cases_and_deaths():
         dataset = DailyCOVIDData('csv_data/daily_covid_data.csv', 'csv_data/provinces_ar.csv')
-        database = MongoDatabase()
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'daily_data')
 
     @staticmethod
     def process_and_store_ar_population():
         dataset = ARPopulationCSVDataset("csv_data/population_ar.csv", separator=';', decimal=',', thousands='.')
-        database = MongoDatabase()
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'population_ar')
 
     @staticmethod
     def process_and_store_aemet_data():
         dataset = AEMETWeatherDataset('csv_data/weather.json', 'csv_data/provinces_ar.csv')
-        database = MongoDatabase()
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'weather')
 
     @staticmethod
     def process_and_store_death_causes():
         dataset = DeathCausesDataset('csv_data/death_causes.csv')
-        database = MongoDatabase()
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'death_causes')
 
     @staticmethod
     def process_and_store_chronic_illnesses():
         dataset = ChronicIllnessesDataset('csv_data/chronic_illnesses.csv', separator=';', decimal=',')
-        database = MongoDatabase()
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'chronic_illnesses')
 
     # endregion

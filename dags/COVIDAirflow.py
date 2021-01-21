@@ -17,6 +17,7 @@ from airflow.operators.dummy import DummyOperator
 # endregion
 
 # region Airflow DAG definition
+from taskgroups.DataAnalysis import DataAnalysisTaskGroup
 from taskgroups.GoogleDatasets import GoogleDatasetsTaskGroup
 from taskgroups.CSVDatasets import CSVDatasetsTaskGroup
 from taskgroups.PDFMhealth import PDFMhealthTaskGroup
@@ -48,11 +49,12 @@ google_data = GoogleDatasetsTaskGroup(dag)
 csv_data = CSVDatasetsTaskGroup(dag)
 renave_reports = PDFRenaveTaskGroup(dag)
 mhealth_reports = PDFMhealthTaskGroup(dag)
+analyze_extracted_data = DataAnalysisTaskGroup(dag)
 
 # endregion
 
 # region Airflow pipeline definition
 
-dummy_start_op >> [google_data, csv_data, renave_reports, mhealth_reports] >> dummy_end_op
+dummy_start_op >> [google_data, csv_data, renave_reports, mhealth_reports] >> analyze_extracted_data >> dummy_end_op
 
 # endregion

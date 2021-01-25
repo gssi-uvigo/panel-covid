@@ -49,6 +49,28 @@ class DailyCOVIDData(CSVDataset):
         df = df.drop(columns=['province'])
         self.df = df.groupby(['gender', 'age_range', 'date', 'autonomous_region']).sum().reset_index()
 
+        # Get the data for the whole country
+        df_total = self.df.groupby(['gender', 'age_range', 'date']).sum().reset_index()
+        df_total['autonomous_region'] = 'España'
+        self.df = pd.concat([self.df, df_total])
+
+        # Get the data for both genders
+        df_total = self.df.groupby(['age_range', 'date', 'autonomous_region']).sum().reset_index()
+        df_total['gender'] = 'total'
+        self.df = pd.concat([self.df, df_total])
+
+        # Get the data for all ages
+        df_total = self.df.groupby(['gender', 'date', 'autonomous_region']).sum().reset_index()
+        df_total['age_range'] = 'total'
+        self.df = pd.concat([self.df, df_total])
+
+        # Calculate the total cases, deaths, and hospitalizations
+        df_total = self.df.groupby(['gender', 'age_range', 'date', 'autonomous_region']).sum().groupby(
+            ['gender', 'age_range', 'autonomous_region']).cumsum().rename(
+            columns={'new_cases': 'total_cases', 'new_hospitalizations': 'total_hospitalizations',
+                     'new_ic_hospitalizations': 'total_ic_hospitalizations', 'new_deaths': 'total_deaths'})
+        self.df = pd.merge(self.df, df_total, on=['gender', 'age_range', 'date', 'autonomous_region'])
+
 
 class ARPopulationCSVDataset(CSVDataset):
     """Represents a CSV with the Spanish population classified by age and autonomous region"""

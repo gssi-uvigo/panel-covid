@@ -35,31 +35,10 @@ class DailyCOVIDData:
         self.population_df = self.db_read.read_data('population_ar')
 
         # Aggregate the data
-        self.__aggregate_data__()
+        self.__merge__population__()
 
-    def __aggregate_data__(self):
-        """Calculate the cases, deaths and hospitalizations for the whole country, both genders and all ages"""
-        # Get the data for the whole country
-        df_total = self.df.groupby(['gender', 'age_range', 'date']).sum().reset_index()
-        df_total['autonomous_region'] = 'España'
-        self.df = pd.concat([self.df, df_total])
-
-        # Get the data for both genders
-        df_total = self.df.groupby(['age_range', 'date', 'autonomous_region']).sum().reset_index()
-        df_total['gender'] = 'total'
-        self.df = pd.concat([self.df, df_total])
-
-        # Get the data for all ages
-        df_total = self.df.groupby(['gender', 'date', 'autonomous_region']).sum().reset_index()
-        df_total['age_range'] = 'total'
-        self.df = pd.concat([self.df, df_total])
-
-        # Calculate the total cases, deaths, and hospitalizations
-        df_total = self.df.groupby(['gender', 'age_range', 'date', 'autonomous_region']).sum().groupby(
-            ['gender', 'age_range', 'autonomous_region']).cumsum().rename(
-            columns={'new_cases': 'total_cases', 'new_hospitalizations': 'total_hospitalizations',
-                     'new_ic_hospitalizations': 'total_ic_hospitalizations', 'new_deaths': 'total_deaths'})
-        self.df = pd.merge(self.df, df_total, on=['gender', 'age_range', 'date', 'autonomous_region'])
+    def __merge__population__(self):
+        """Merge the COVID daily data dataset with the population dataset"""
 
         # Change the population age ranges to the COVID daily data ones
         age_range_translations = {'0-4': '0-9', '5-9': '0-9', '10-14': '10-19', '15-19': '10-19', '20-24': '20-29',

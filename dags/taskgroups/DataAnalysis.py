@@ -102,6 +102,8 @@ class DailyCOVIDData:
         new_cases_ma = pd.DataFrame({'new_cases_ma_1w': new_cases_ma_1w, 'new_cases_ma_2w': new_cases_ma_2w})
         cases_df = pd.merge(cases_df, new_cases_ma, on=['autonomous_region', 'date', 'age_range', 'gender'])
 
+        cases_df = cases_df.drop(columns=['population'])
+
         # Store the data
         self.db_write.store_data('cases', cases_df.reset_index().to_dict('records'))
 
@@ -241,12 +243,12 @@ class DailyCOVIDData:
 class DeathCauses:
     """Death causes in Spain"""
 
-    age_range_translations = {'0-1': '0-9', '0-4': '0-9', '1-4': '0-9', '5-9': '0-9', '10-14': '10-19',
-                              '15-19': '10-19', '20-24': '20-29',
+    age_range_translations = {'0-1': '0-9', '1-4': '0-9', '5-9': '0-9', '10-14': '10-19', '15-19': '10-19',
+                              '20-24': '20-29',
                               '25-29': '20-29', '30-34': '30-39', '35-39': '30-39', '40-44': '40-49',
                               '45-49': '40-49', '50-54': '50-59', '55-59': '50-59', '60-64': '60-69',
                               '65-69': '60-69', '70-74': '70-79', '75-79': '70-79', '80-84': '80+', '85-89': '80+',
-                              '≥90': '80+', '90-94': '80+', '≥95': '80+', 'Total': 'total'}
+                              '90-94': '80+', '95+': '80+', 'Total': 'total'}
 
     def __init__(self):
         """Load the datasets"""
@@ -255,56 +257,55 @@ class DeathCauses:
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
         # Load the death causes, Spanish population and COVID deaths datasets
-        self.death_causes_df = self.db_read.read_data('death_causes')[['death_cause', 'age_range', 'total']].rename(
-            columns={'total': 'total_deaths'})  # load the death causes dataset
-        self.population_df = self.db_read.read_data('population_ar', {'autonomous_region': 'España'})[
-            ['age_range', 'total']].rename(columns={'total': 'population'})  # load the poplation dataset
-        self.deaths_df = \
-            self.db_write.read_data('deaths',
-                                    {'autonomous_region': 'España', 'gender': 'total', 'date': dt(2020, 12, 31)})[
-                ['age_range', 'total_deaths']]  # load the COVID deaths dataset
+        self.death_causes_df = pd.DataFrame(self.db_read['death_causes'].find({})).drop(columns='_id')
+        self.deaths_df = pd.DataFrame(self.db_write['deaths'].find({'autonomous_region': 'España', 'date':
+            dt(2021, 1, 20)}))[['age_range', 'total_deaths', 'gender']]  # load the COVID deaths dataset
 
     def process_and_store_data(self):
         """Analyze the data, calculate some new variables, and store the results to the database"""
-        self.calculate_top_10_death_causes()
-        self.store_data()
+        self.__calculate_top_10_death_causes__()
+        self.__store_data__()
 
-    def calculate_top_10_death_causes(self):
-        """Calculate the top 10 death causes in Spain"""
+    def __calculate_top_10_death_causes__(self):
+        """Calculate the top 10 death causes in Spain and the percentage of total deaths whose cause was COVID"""
         # Use the same age ranges in the three dataframes
-        self.deaths_df['age_range'] = self.deaths_df['age_range'].replace(DeathCauses.age_range_translations)
-        self.deaths_df = self.deaths_df.groupby(['age_range']).sum().reset_index()
-        self.death_causes_df['age_range'] = self.death_causes_df['age_range']. \
+        self.death_causes_df['age_range'] = self.death_causes_df['age_range'].\
             replace(DeathCauses.age_range_translations)
-        self.death_causes_df = self.death_causes_df.groupby(['age_range', 'death_cause']).sum().reset_index()
-        self.population_df['age_range'] = self.population_df['age_range'].replace(DeathCauses.age_range_translations)
-        self.population_df = self.population_df.groupby(['age_range']).sum().reset_index()
+        self.death_causes_df = self.death_causes_df.groupby(['age_range', 'death_cause', 'gender']).sum().reset_index()
 
-        # Remove "all causes" death cause
-        self.death_causes_df = self.death_causes_df[self.death_causes_df['death_cause'] != 'Todas las causas']
-
-        # Calculate the total deaths for each death cause
-        death_causes_population = pd.merge(self.death_causes_df, self.population_df, on='age_range')
-        death_causes_population['total_deaths'] = \
-            (death_causes_population['population'] / 100000) * death_causes_population['total_deaths']
-        death_causes_population = death_causes_population.drop(columns='population')
+        # Get "all causes" death cause and then remove it
+        all_causes_sum_df = self.death_causes_df[self.death_causes_df['death_cause'] == 'Todas las causas'].copy()
+        death_causes_df = self.death_causes_df[self.death_causes_df['death_cause'] != 'Todas las causas']
 
         # Group the 2018 death causes with the COVID-19 deaths
         self.deaths_df['death_cause'] = 'COVID-19'
-        death_causes_total = pd.concat([self.deaths_df, death_causes_population])
+        death_causes_total = pd.concat([self.deaths_df, death_causes_df])
 
-        # Get the top 10 death causes for each age range
-        death_causes_top_10 = death_causes_total.sort_values(['age_range', 'total_deaths'], ascending=False).groupby(
-            'age_range').head(10).reset_index()
+        # Get the top 10 death causes for each age range and gender
+        death_causes_top_10 = death_causes_total.sort_values(['age_range', 'total_deaths', 'gender'],
+                                                             ascending=False).groupby(['age_range', 'gender']).head(
+            10).reset_index()
         death_causes_top_10['total_deaths'] = death_causes_top_10['total_deaths'].round().astype("int")
+        death_causes_top_10 = death_causes_top_10.set_index('death_cause')
+        self.death_causes_top_10 = death_causes_top_10
 
-        self.death_causes_df = death_causes_top_10
+        # Calculate the percentage of deaths produced by COVID
+        covid_vs_all_deaths = pd.merge(self.deaths_df, all_causes_sum_df, on=['age_range', 'gender']).rename(
+            columns={'total_deaths_x': 'covid_deaths', 'total_deaths_y': 'other_deaths'}).drop(
+            columns=['death_cause_y', 'death_cause_x'])
+        covid_vs_all_deaths['covid_percentage'] = 100 * covid_vs_all_deaths['covid_deaths'] / (
+                    covid_vs_all_deaths['covid_deaths'] + covid_vs_all_deaths['other_deaths'])
+        self.covid_vs_all_deaths = covid_vs_all_deaths
 
-    def store_data(self):
-        """Store the processed DataFrame in the database"""
-        mongo_data = self.death_causes_df.to_dict('records')
+    def __store_data__(self):
+        """Store the top death causes and the COVID deaths percentage in the database"""
+        mongo_data_top_death_causes = self.death_causes_top_10.to_dict('records')
         collection = 'top_death_causes'
-        self.db_write.store_data(collection, mongo_data)
+        self.db_write.store_data(collection, mongo_data_top_death_causes)
+
+        mongo_data_covid_vs_all_deaths = self.covid_vs_all_deaths.to_dict('records')
+        collection = 'covid_vs_all_deaths'
+        self.db_write.store_data(collection, mongo_data_covid_vs_all_deaths)
 
 
 class DataAnalysisTaskGroup(TaskGroup):
@@ -350,13 +351,13 @@ class DataAnalysisTaskGroup(TaskGroup):
     def analyze_daily_deaths():
         """Analyze the deaths data in the daily COVID dataset"""
         data = DailyCOVIDData()
-        data.process_and_store_cases()
+        data.process_and_store_deaths()
 
     @staticmethod
     def analyze_daily_hospitalizations():
         """Analyze the hospitalizations data in the daily COVID dataset"""
         data = DailyCOVIDData()
-        data.process_and_store_cases()
+        data.process_and_store_hospitalizations()
 
     @staticmethod
     def analyze_death_causes():

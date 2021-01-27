@@ -149,51 +149,35 @@ class AEMETWeatherDataset:
 class DeathCausesDataset(CSVDataset):
     """Represent a dataset containing all the death causes in Spain in 2018"""
 
+    age_range_translations = {'\*': '', ' *[\(\)] *': '', 'Todas las edades': 'total',
+                              'Menos de ([0-9]*) año': '0-\\1', 'De ([0-9]*) a ([0-9]*) años': '\\1-\\2',
+                              '([0-9]*) y más años': '\\1+'}
+    column_name_translations = {'Causa de muerte': 'death_cause', 'Sexo': 'gender', 'Edad': 'age_range',
+                                'Total': 'total_deaths'}
+    gender_translations = {'Total': 'total', 'Hombres': 'M', 'Mujeres': 'F'}
+
     def __init__(self, file):
-        df = pd.read_csv(file, sep=';', decimal=',', thousands='.', skiprows=5, skipfooter=6,
-                         engine='python')
+        df = pd.read_csv(file, sep=';', decimal=',', thousands='.')
         super().__init__(file, dataframe=df)
 
     def __process_dataset__(self):
-        death_causes_df = self.df
-        death_causes_df.rename(columns={'Unnamed: 0': 'death_cause'}, inplace=True)  # rename the death cause column
-        death_causes_df.drop(columns=['Unnamed: 23'], inplace=True)  # remove useless column
+        death_causes = self.df
+        death_causes = death_causes[death_causes['Periodo'] == 2018].drop(
+            columns='Periodo')  # we only need the death causes for 2018
+        death_causes = death_causes.rename(columns=DeathCausesDataset.column_name_translations)  # translate the column
+        # names to English
+        death_causes['age_range'] = death_causes['age_range'].replace(DeathCausesDataset.age_range_translations,
+                                                                      regex=True)  # convert the age ranges to a
+        # numeric notation
+        death_causes['age_range'] = death_causes['age_range'].apply(
+            lambda x: x.strip())  # remove trailing spaces from the age ranges
+        death_causes['death_cause'] = death_causes['death_cause'].replace({'[0-9A-Z\- ]+\.': ''},
+                                                                          regex=True)  # normalize the death causes
+        # (keep them in Spanish)
+        death_causes['gender'] = death_causes['gender'].replace(DeathCausesDataset.gender_translations)  # translate the
+        # gender to English
 
-        # Replace the age ranges by a numeric format (XX-YY) and convert the multiple age range columns to a single one
-        a = death_causes_df.melt(id_vars=['death_cause'], var_name='age_range', value_name='deaths')
-        a = a.replace(CSVDataset.age_range_translations, regex=True)
-
-        # Split the "death_cause" column into the actual death cause and three columns for male,
-        # female and total deaths for that cause
-        death_causes_df_pivoted = pd.DataFrame(columns=['death_cause', 'age_range', 'M', 'F', 'total'])
-        genders = ['Ambos sexos', 'Hombres', 'Mujeres']
-        current_cause = {}
-        for index, row in a.iterrows():
-            # Iterate row by row
-            # There are two possibilities: death cause or total/female/male count for the current cause
-            death_cause_gender = row['death_cause'].strip()
-            if death_cause_gender not in genders:
-                if current_cause:
-                    death_causes_df_pivoted = death_causes_df_pivoted.append(current_cause, ignore_index=True)
-                current_cause = {'death_cause': death_cause_gender, 'age_range': row['age_range']}
-            elif death_cause_gender == 'Ambos sexos':
-                current_cause['total'] = row['deaths']
-            elif death_cause_gender == 'Hombres':
-                current_cause['M'] = row['deaths']
-            elif death_cause_gender == 'Mujeres':
-                current_cause['F'] = row['deaths']
-
-        death_causes_df = death_causes_df_pivoted
-
-        # Remove numbers and other useless characters from the death cause
-        death_causes_df['death_cause'] = death_causes_df['death_cause'].replace(['[0-9\-]+', '^ *[A-Z]+\.'], '',
-                                                                                regex=True)
-        death_causes_df['death_cause'] = death_causes_df['death_cause'].apply(lambda x: x.strip())
-
-        # Replace NaN with 0
-        death_causes_df.replace(np.nan, 0, inplace=True)
-
-        self.df = death_causes_df
+        self.df = death_causes
 
 
 class ChronicIllnessesDataset(CSVDataset):
@@ -305,7 +289,7 @@ class CSVDatasetsTaskGroup(TaskGroup):
     @staticmethod
     def download_death_causes():
         """Download the dataset with the death causes in Spain in 2018"""
-        download_csv_file('http://www.ine.es/jaxi/files/_px/es/csv_sc/t15/p417/a2018/01004.csv_sc',
+        download_csv_file('https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/6609.csv',
                           'death_causes.csv',
                           False)
 

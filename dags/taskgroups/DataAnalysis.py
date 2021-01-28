@@ -257,9 +257,10 @@ class DeathCauses:
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
         # Load the death causes, Spanish population and COVID deaths datasets
-        self.death_causes_df = pd.DataFrame(self.db_read['death_causes'].find({})).drop(columns='_id')
-        self.deaths_df = pd.DataFrame(self.db_write['deaths'].find({'autonomous_region': 'España', 'date':
-            dt(2021, 1, 20)}))[['age_range', 'total_deaths', 'gender']]  # load the COVID deaths dataset
+        self.death_causes_df = pd.DataFrame(self.db_read.read_data('death_causes'))
+        self.deaths_df = pd.DataFrame(self.db_write.read_data('deaths', {'autonomous_region': 'España',
+                                                                         'date': dt(2021, 1, 20)})) \
+            [['age_range', 'total_deaths', 'gender']]  # load the COVID deaths dataset
 
     def process_and_store_data(self):
         """Analyze the data, calculate some new variables, and store the results to the database"""
@@ -269,7 +270,7 @@ class DeathCauses:
     def __calculate_top_10_death_causes__(self):
         """Calculate the top 10 death causes in Spain and the percentage of total deaths whose cause was COVID"""
         # Use the same age ranges in the three dataframes
-        self.death_causes_df['age_range'] = self.death_causes_df['age_range'].\
+        self.death_causes_df['age_range'] = self.death_causes_df['age_range']. \
             replace(DeathCauses.age_range_translations)
         self.death_causes_df = self.death_causes_df.groupby(['age_range', 'death_cause', 'gender']).sum().reset_index()
 
@@ -294,7 +295,7 @@ class DeathCauses:
             columns={'total_deaths_x': 'covid_deaths', 'total_deaths_y': 'other_deaths'}).drop(
             columns=['death_cause_y', 'death_cause_x'])
         covid_vs_all_deaths['covid_percentage'] = 100 * covid_vs_all_deaths['covid_deaths'] / (
-                    covid_vs_all_deaths['covid_deaths'] + covid_vs_all_deaths['other_deaths'])
+                covid_vs_all_deaths['covid_deaths'] + covid_vs_all_deaths['other_deaths'])
         self.covid_vs_all_deaths = covid_vs_all_deaths
 
     def __store_data__(self):

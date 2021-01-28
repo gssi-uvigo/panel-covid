@@ -57,7 +57,11 @@ class MongoDatabase:
         """
         collection = self.db.get_collection(collection_name)
         query = collection.find(filters)
-        return pd.DataFrame(query)
+        df = pd.DataFrame(query)
+        if '_id' in df.columns:
+            df = df.drop(columns='_id')
+
+        return df
 
     def store_data(self, collection_name, data, overwrite=True):
         """

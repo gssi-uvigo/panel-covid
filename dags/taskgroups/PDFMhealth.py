@@ -90,7 +90,8 @@ class MHealthPDFReport(PDFReport):
                     }
 
                 hospital_pressure_report.append(
-                    {'date': self.date - td(days=1), 'autonomous_region': ar, 'pressure': pressure_ar}
+                    {'date': self.date - td(days=1), 'autonomous_region': PDFReport.get_real_autonomous_region_name(ar),
+                     'pressure': pressure_ar}
                 )
 
             return hospital_pressure_report
@@ -129,8 +130,9 @@ class MHealthPDFReport(PDFReport):
                     ar_positivity = row[positivity_column]
                     tests_ar['positivity'] = PDFReport.convert_value_to_number(ar_positivity, is_float=True)
 
-                diagnostic_tests_report.append({'date': self.date - td(days=3), 'autonomous_region': ar,
-                                                'diagnostic_tests': tests_ar})
+                diagnostic_tests_report.append(
+                    {'date': self.date - td(days=3), 'autonomous_region': PDFReport.get_real_autonomous_region_name(ar),
+                     'diagnostic_tests': tests_ar})
 
             return diagnostic_tests_report
 
@@ -272,7 +274,7 @@ class MHealthPDFReport(PDFReport):
 
                 hospitalized_cases_report.append({
                     'date': self.date - td(days=1),
-                    'autonomous_region': ar,
+                    'autonomous_region': PDFReport.get_real_autonomous_region_name(ar),
                     'hospitalizations': {
                         'total_hospitalized_cases': total_hospitalized_cases,
                         'total_ic_cases': total_ic_cases

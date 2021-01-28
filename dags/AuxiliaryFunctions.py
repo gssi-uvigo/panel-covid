@@ -157,6 +157,14 @@ class PDFReport:
                     table_number = int(re.match('Tabla [0-9]+', title).group()[6:])
                     self.tables_index_numbers[table_number] = page_number
 
+    @staticmethod
+    def get_real_autonomous_region_name(ar):
+        """
+            Transform a slashed (for example, Castilla_y_León) Autonomous Region name into its original (Castilla y
+            León)
+        """
+        return ar.replace('_', ' ')
+
     @classmethod
     def process_reports_batch(cls, directory, last_index):
         """Return a list with a report object for each PDF report in the specified directory"""
@@ -267,8 +275,7 @@ class PDFReport:
         if header_column is None:
             header_column = PDFReport.autonomous_regions
         data_cell_regex = '[0-9.,\-]'
-        header_cell_regex = header_column[0]
-        next_header_index = 0
+        header_cell_regex = '[A-zÀ-ú_]'
         table_page = page.split()
 
         table_start = table_page.index(f'_TABLA{table_number}_')  # get the beginning of the columns row
@@ -280,20 +287,10 @@ class PDFReport:
         for i, cell in enumerate(table_page[table_first_row:]):
             if re.match(header_cell_regex, cell):
                 # New row?
-                if re.match(data_cell_regex, table_page[table_first_row + i + 1]) \
-                        and re.match(data_cell_regex, table_page[table_first_row + i + 2]):  # New row?
-                    # The next two cells are numeric, so the table hasn't ended yet
+                if cell in header_column:  # New row?
                     row = []
                     table.append(row)
                     row.append(cell)
-
-                    # Update the regex for matching the next header cell
-                    next_header_index += 1
-                    if next_header_index < len(header_column):
-                        header_cell_regex = header_column[next_header_index]
-                    else:
-                        # That was the last row; stop when text found
-                        header_cell_regex = '[^0-9.,\-]'
                 else:
                     # The table has finished
                     break

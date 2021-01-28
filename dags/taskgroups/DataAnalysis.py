@@ -80,17 +80,15 @@ class DailyCOVIDData:
 
         # Daily, weekly and monthly increase
         increase_cases_df_1d = cases_df.groupby(['autonomous_region', 'gender', 'age_range'])['new_cases'].rolling(
-            '2D').apply(DailyCOVIDData.calculate_increase_percentage, raw=True)
+            '7D').mean().rolling(2).apply(DailyCOVIDData.calculate_increase_percentage, raw=True)
         increase_cases_df_7d = cases_df.groupby(['autonomous_region', 'gender', 'age_range'])['new_cases'].rolling(
-            '8D').apply(DailyCOVIDData.calculate_increase_percentage, raw=True)
-        increase_cases_df_14d = cases_df.groupby(['autonomous_region', 'gender', 'age_range'])['new_cases'].rolling(
-            '15D').apply(DailyCOVIDData.calculate_increase_percentage, raw=True)
+            '14D').mean().rolling(8).apply(DailyCOVIDData.calculate_increase_percentage, raw=True)
         increase_cases_df_30d = cases_df.groupby(['autonomous_region', 'gender', 'age_range'])['new_cases'].rolling(
-            '31D').apply(DailyCOVIDData.calculate_increase_percentage, raw=True)
+            '60D').mean().rolling(31).apply(DailyCOVIDData.calculate_increase_percentage, raw=True)
 
         increase_cases_percentages = pd.DataFrame(
             {'daily_increase': increase_cases_df_1d, 'weekly_increase': increase_cases_df_7d,
-             'two_weeks_increase': increase_cases_df_14d, 'monthly_increase': increase_cases_df_30d})
+             'monthly_increase': increase_cases_df_30d})
         cases_df = pd.merge(cases_df, increase_cases_percentages,
                             on=['autonomous_region', 'date', 'age_range', 'gender'])
 

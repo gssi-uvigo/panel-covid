@@ -44,6 +44,9 @@ class DailyCOVIDData(CSVDataset):
         gender_translations = {'H': 'M', 'M': 'F', 'NC': 'unknown'}
         df['gender'] = df['gender'].replace(gender_translations)
 
+        # Convert the date from String to Date type
+        df['date'] = pd.to_datetime(df['date'])
+
         # Replace provinces with Autonomous Regions
         df = pd.merge(df, provinces_df, on='province')
         df = df.drop(columns=['province'])

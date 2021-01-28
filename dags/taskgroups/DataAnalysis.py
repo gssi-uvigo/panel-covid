@@ -430,6 +430,44 @@ class HospitalsPressure:
         self.db_write.store_data(collection, mongo_data)
 
 
+class TransmissionIndicators:
+    """
+        Transmission indicators in Spain: cases with unknown contact,
+        identified contacts per case and asymptomatic cases percentage.
+    """
+
+    def __init__(self):
+        """Load the dataset"""
+        # Connection to the extracted data database for reading, and to the analyzed data for writing
+        self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
+        self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
+
+        # Load the transmission indicators data
+        self.transmission_indicators = self.db_read.read_data('transmission_indicators')
+
+    def __transform_data__(self):
+        """Get only the desired data and transform it to a single-level hierarchy"""
+        ti_df = self.transmission_indicators
+        ti_df['cases_unknown_contact'] = ti_df['transmission_indicators'].apply(
+            lambda x: x['cases_unknown_contact']['percentage'])
+        ti_df['identified_contacts_per_case'] = ti_df['transmission_indicators'].apply(
+            lambda x: x['identified_contacts_per_case']['median'])
+        ti_df['asymptomatic_percentage'] = ti_df['transmission_indicators'].apply(
+            lambda x: x['asymptomatic_percentage'])
+        self.transmission_indicators = ti_df.drop(columns='transmission_indicators')
+
+    def move_data(self):
+        """Just move the data from the extracted to the analyzed database"""
+        self.__transform_data__()
+        self.__store_data__()
+
+    def __store_data__(self):
+        """Store the outbreaks description in the database"""
+        mongo_data = self.transmission_indicators.to_dict('records')
+        collection = 'hospitals_pressure'
+        self.db_write.store_data(collection, mongo_data)
+
+
 class DataAnalysisTaskGroup(TaskGroup):
     """TaskGroup that analyzes all the downloaded and extracted data."""
 
@@ -478,6 +516,11 @@ class DataAnalysisTaskGroup(TaskGroup):
                        task_group=self,
                        dag=dag)
 
+        PythonOperator(task_id='move_transmission_indicators',
+                       python_callable=DataAnalysisTaskGroup.move_transmission_indicators,
+                       task_group=self,
+                       dag=dag)
+
     @staticmethod
     def analyze_daily_cases():
         """Analyze the cases data in the daily COVID dataset"""
@@ -519,3 +562,9 @@ class DataAnalysisTaskGroup(TaskGroup):
         """Analyze the diagnostic tests data"""
         data = DiagnosticTests()
         data.process_and_store()
+
+    @staticmethod
+    def move_transmission_indicators():
+        """Move the transmission indicators data from the extracted to the analyzed database"""
+        data = TransmissionIndicators()
+        data.move_data()

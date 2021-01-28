@@ -409,6 +409,29 @@ class OutbreaksDescription:
         self.db_write.store_data(collection, mongo_data)
 
 
+class HospitalsPressure:
+    """Hospitals pressure in Spain"""
+    def __init__(self):
+        """Load the dataset"""
+        # Connection to the extracted data database for reading, and to the analyzed data for writing
+        self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
+        self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
+
+        # Load the hospitals pressure data
+        self.hospitals_pressure = self.db_read.read_data('hospitals_pressure', projection=
+        ['hospitalized_patients', 'beds_percentage', 'ic_patients', 'ic_beds_percentage'])
+
+    def move_data(self):
+        """Just move the data from the extracted to the analyzed database"""
+        self.__store_data__()
+
+    def __store_data__(self):
+        """Store the outbreaks description in the database"""
+        mongo_data = self.hospitals_pressure.to_dict('records')
+        collection = 'hospitals_pressure'
+        self.db_write.store_data(collection, mongo_data)
+
+
 class DataAnalysisTaskGroup(TaskGroup):
     """TaskGroup that analyzes all the downloaded and extracted data."""
 
@@ -447,6 +470,11 @@ class DataAnalysisTaskGroup(TaskGroup):
                        task_group=self,
                        dag=dag)
 
+        PythonOperator(task_id='move_hospitals_pressure',
+                       python_callable=DataAnalysisTaskGroup.move_hospitals_pressure,
+                       task_group=self,
+                       dag=dag)
+
         PythonOperator(task_id='analyze_diagnostic_tests_data',
                        python_callable=DataAnalysisTaskGroup.analyze_diagnostic_tests,
                        task_group=self,
@@ -480,6 +508,12 @@ class DataAnalysisTaskGroup(TaskGroup):
     def move_outbreaks_description():
         """Move the outbreaks description from the extracted to the analyzed database"""
         data = OutbreaksDescription()
+        data.move_data()
+
+    @staticmethod
+    def move_hospitals_pressure():
+        """Move the hospitals pressure data from the extracted to the analyzed database"""
+        data = HospitalsPressure()
         data.move_data()
 
     @staticmethod

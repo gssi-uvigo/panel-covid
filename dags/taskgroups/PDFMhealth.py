@@ -71,27 +71,19 @@ class MHealthPDFReport(PDFReport):
                     ar_beds_percentage = PDFReport.convert_value_to_number(row[-5], is_float=True)
                     ar_patients_ic = PDFReport.convert_value_to_number(row[-4])
                     ar_ic_beds_percentage = PDFReport.convert_value_to_number(row[-3], is_float=True)
-                    pressure_ar = {
-                        'hospitalized_patients': ar_patients_hospital,
-                        'beds_percentage': ar_beds_percentage, 'ic_patients': ar_patients_ic,
-                        'ic_beds_percentage': ar_ic_beds_percentage,
-                        'admissions': ar_hospital_admissions, 'discharges': ar_hospital_discharges
-                    }
 
                 else:
                     # Columns: AR, hospitalized patients, IC patients, % beds, admissions, discharges
                     ar_patients_hospital = PDFReport.convert_value_to_number(row[1])
                     ar_beds_percentage = PDFReport.convert_value_to_number(row[-3], is_float=True)
                     ar_patients_ic = PDFReport.convert_value_to_number(row[-4])
-                    pressure_ar = {
-                        'hospitalized_patients': ar_patients_hospital,
-                        'beds_percentage': ar_beds_percentage, 'ic_patients': ar_patients_ic,
-                        'admissions': ar_hospital_admissions, 'discharges': ar_hospital_discharges
-                    }
+                    ar_ic_beds_percentage = None
 
                 hospital_pressure_report.append(
                     {'date': self.date - td(days=1), 'autonomous_region': PDFReport.get_real_autonomous_region_name(ar),
-                     'pressure': pressure_ar}
+                     'hospitalized_patients': ar_patients_hospital, 'beds_percentage': ar_beds_percentage,
+                     'ic_patients': ar_patients_ic, 'ic_beds_percentage': ar_ic_beds_percentage,
+                     'admissions': ar_hospital_admissions, 'discharges': ar_hospital_discharges}
                 )
 
             return hospital_pressure_report

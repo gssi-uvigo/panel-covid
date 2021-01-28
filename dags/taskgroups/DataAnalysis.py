@@ -256,11 +256,11 @@ class DeathCauses:
         self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
-        # Load the death causes, Spanish population and COVID deaths datasets
-        self.death_causes_df = pd.DataFrame(self.db_read.read_data('death_causes'))
-        self.deaths_df = pd.DataFrame(self.db_write.read_data('deaths', {'autonomous_region': 'España',
-                                                                         'date': dt(2021, 1, 20)})) \
-            [['age_range', 'total_deaths', 'gender']]  # load the COVID deaths dataset
+        # Load the death causes and COVID deaths datasets
+        self.death_causes_df = self.db_read.read_data('death_causes')
+        self.deaths_df = self.db_write.read_data('deaths', {'autonomous_region': 'España',
+                                                            'date': dt(2021, 1, 20)},
+                                                 ['age_range', 'total_deaths', 'gender'])
 
     def process_and_store_data(self):
         """Analyze the data, calculate some new variables, and store the results to the database"""
@@ -309,6 +309,83 @@ class DeathCauses:
         self.db_write.store_data(collection, mongo_data_covid_vs_all_deaths)
 
 
+class DiagnosticTests:
+    """Dataset with the number of diagnostic tests made each day on each Autonomous Region"""
+
+    def __init__(self):
+        """Load the datasets"""
+        # Connection to the extracted data database for reading, and to the analyzed data for writing
+        self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
+        self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
+
+        # Load the diagnostic tests, Spanish population and COVID cases datasets
+        self.diagnostic_tests_df = self.db_read.read_data('diagnostic_tests')
+        self.population_df = self.db_read.read_data('population_ar', {'age_range': 'Total'},
+                                                    ['autonomous_region', 'total'])
+        self.new_cases_df = self.db_read.read_data('daily_data', {'age_range': 'total', 'gender': 'total'},
+                                                   ['age_range', 'total_deaths', 'gender'])
+
+    def __process_dataset__(self):
+        """
+            Get the data for the whole country, the total number of tests, the average positivity, and the number of
+            total tests per 100k inhabitants.
+        """
+        # Number of tests and average positivity in the whole country
+        diagnostics_grouped = self.diagnostic_tests_df.groupby('date')
+        diagnostics_total_tests = diagnostics_grouped['diagnostic_tests'].sum()
+        diagnostics_avg_positivity = diagnostics_grouped['positivity'].mean()
+        diagnostics_df_total = pd.merge(diagnostics_total_tests, diagnostics_avg_positivity,
+                                        on='date').reset_index()
+
+        diagnostics_df_total['autonomous_region'] = 'España'
+        self.diagnostic_tests_df = pd.concat([self.diagnostic_tests_df, diagnostics_df_total])
+        self.diagnostic_tests_df = self.diagnostic_tests_df.sort_values(by=['date', 'autonomous_region'])
+
+        # Number of total tests
+        diagnostic_tests_df_total = self.diagnostic_tests_df[['date', 'autonomous_region', 'diagnostic_tests']] \
+            .groupby(['date', 'autonomous_region']).sum().groupby('autonomous_region').cumsum().reset_index()
+        self.diagnostic_tests_df = pd.merge(self.diagnostic_tests_df, diagnostic_tests_df_total,
+                                            on=['date', 'autonomous_region']).rename(
+            columns={'diagnostic_tests_x': 'new_diagnostic_tests', 'diagnostic_tests_y': 'total_diagnostic_tests'})
+
+        # Average positivity for each Autonomous Region
+        diagnostic_tests_df_avg_positivity = self.diagnostic_tests_df[
+            ['date', 'autonomous_region', 'positivity']].groupby(['date', 'autonomous_region']).sum().groupby(
+            'autonomous_region')
+        avg_positivity_df = diagnostic_tests_df_avg_positivity.cumsum().rename(columns={'positivity': 'sum'})
+        avg_positivity_df['count'] = diagnostic_tests_df_avg_positivity.cumcount()
+        avg_positivity_df['average_positivity'] = avg_positivity_df['sum'] / avg_positivity_df['count']
+        avg_positivity_df = avg_positivity_df.drop(columns=['sum', 'count'])
+        self.diagnostic_tests_df = pd.merge(self.diagnostic_tests_df, avg_positivity_df,
+                                            on=['date', 'autonomous_region'])
+
+        # Total tests / 100 000 inhabitants
+        diagnostics_population_df = pd.merge(self.diagnostic_tests_df, self.population_df, on='autonomous_region')\
+            .rename(columns={'total': 'population'})
+        diagnostics_population_df['total_tests_per_population'] = 100000 * diagnostics_population_df[
+            'total_diagnostic_tests'] / diagnostics_population_df['population']
+        self.diagnostic_tests_df = diagnostics_population_df.drop(columns='population')
+
+    def __append_daily_cases__(self):
+        """
+            Append the daily cases to the diagnostic tests dataset, to enable some multi-dimensional visualizations.
+        """
+        self.diagnostic_tests_df = pd.merge(self.diagnostic_tests_df, self.new_cases_df,
+                                            on=['date', 'autonomous_region'])
+
+    def __store_data__(self):
+        """Store the processed dataset in the database"""
+        mongo_data = self.diagnostic_tests_df.to_dict('records')
+        collection = 'diagnostic_tests'
+        self.db_write.store_data(collection, mongo_data)
+
+    def process_and_store(self):
+        """Analyze the data, calculate some new variables, and store the results to the database"""
+        self.__process_dataset__()
+        self.__append_daily_cases__()
+        self.__store_data__()
+
+
 class OutbreaksDescription:
     """Outbreaks description in Spain"""
 
@@ -319,7 +396,7 @@ class OutbreaksDescription:
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
         # Load the outbreaks description
-        self.outbreaks_description_df = pd.DataFrame(self.db_read.read_data('outbreaks_description'))
+        self.outbreaks_description_df = self.db_read.read_data('outbreaks_description')
 
     def move_data(self):
         """Just move the data from the extracted to the analyzed database"""
@@ -370,6 +447,11 @@ class DataAnalysisTaskGroup(TaskGroup):
                        task_group=self,
                        dag=dag)
 
+        PythonOperator(task_id='analyze_diagnostic_tests_data',
+                       python_callable=DataAnalysisTaskGroup.analyze_diagnostic_tests,
+                       task_group=self,
+                       dag=dag)
+
     @staticmethod
     def analyze_daily_cases():
         """Analyze the cases data in the daily COVID dataset"""
@@ -399,3 +481,9 @@ class DataAnalysisTaskGroup(TaskGroup):
         """Move the outbreaks description from the extracted to the analyzed database"""
         data = OutbreaksDescription()
         data.move_data()
+
+    @staticmethod
+    def analyze_diagnostic_tests():
+        """Analyze the diagnostic tests data"""
+        data = DiagnosticTests()
+        data.process_and_store()

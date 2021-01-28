@@ -49,14 +49,15 @@ class MongoDatabase:
 
             collection.create_index(index)
 
-    def read_data(self, collection_name, filters=None):
+    def read_data(self, collection_name, filters=None, projection=None):
         """
             Read data from the database and return it as a DataFrame.
             :param collection_name: Name of the collection from which the data will be read
             :param filters: (optional) Dictionary with the query filters.
+            :param projection: (optional) List of columns to retrieve.
         """
         collection = self.db.get_collection(collection_name)
-        query = collection.find(filters)
+        query = collection.find(filters, projection)
         df = pd.DataFrame(query)
         if '_id' in df.columns:
             df = df.drop(columns='_id')
@@ -108,7 +109,7 @@ class CSVDataset:
                 'EX': 'Extremadura', 'GA': 'Galicia', 'IB': 'Baleares', 'MC': 'Murcia', 'MD': 'Madrid', 'ML': 'Melilla',
                 'NC': 'Navarra', 'PV': 'País Vasco', 'RI': 'La Rioja', 'VC': 'Comunidad Valenciana'}
     gender_translations = {'Hombres': 'M', 'Mujeres': 'F', 'Ambos sexos': 'total'}
-    age_range_translations = {'\*': '', ' *[\(\)] *': '', 'Todas las edades': 'total',
+    age_range_translations = {'\*': '', ' *[\(\)] *': '', 'Todas las edades': 'total', 'Total': 'total',
                               'Menores de ([0-9]*) año': '0-\\1', 'De ([0-9]*) a ([0-9]*) años': '\\1-\\2',
                               'De ([0-9]*) años y más': '≥\\1', '([0-9]*) y más años': '≥\\1'}
 

@@ -113,7 +113,8 @@ class MHealthPDFReport(PDFReport):
 
             for row in table:
                 ar = row[0]
-                tests_ar = {}
+                total_tests = None
+                positivity = None
 
                 # Number of diagnostics
                 if rate_included:
@@ -122,17 +123,17 @@ class MHealthPDFReport(PDFReport):
                     total_tests_column = -1
 
                 ar_total_tests = row[total_tests_column]
-                tests_ar['total_tests'] = PDFReport.convert_value_to_number(ar_total_tests)
+                total_tests = PDFReport.convert_value_to_number(ar_total_tests)
 
                 # Positivity
                 if positivity_included:
                     positivity_column = -1
                     ar_positivity = row[positivity_column]
-                    tests_ar['positivity'] = PDFReport.convert_value_to_number(ar_positivity, is_float=True)
+                    positivity = PDFReport.convert_value_to_number(ar_positivity, is_float=True)
 
                 diagnostic_tests_report.append(
                     {'date': self.date - td(days=3), 'autonomous_region': PDFReport.get_real_autonomous_region_name(ar),
-                     'diagnostic_tests': tests_ar})
+                     'total_diagnostic_tests': total_tests, 'positivity': positivity})
 
             return diagnostic_tests_report
 

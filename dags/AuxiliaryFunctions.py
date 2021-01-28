@@ -233,6 +233,7 @@ class PDFReport:
     def remove_ar_spaces_and_symbols(page, table_number):
         """Replace the spaces in the Autnomous Regions names with _ and remove undesired symbols like *, %..."""
         replaced_page = page.replace('Castilla La Mancha', 'Castilla_La_Mancha') \
+            .replace('Castilla-La Mancha', 'Castilla_La_Mancha') \
             .replace('C. Valenciana', 'Comunidad_Valenciana') \
             .replace('País Vasco', 'País_Vasco') \
             .replace('Castilla y León', 'Castilla_y_León') \
@@ -274,7 +275,6 @@ class PDFReport:
         """
         if header_column is None:
             header_column = PDFReport.autonomous_regions
-        data_cell_regex = '[0-9.,\-]'
         header_cell_regex = '[A-zÀ-ú_]'
         table_page = page.split()
 

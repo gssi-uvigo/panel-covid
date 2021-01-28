@@ -309,6 +309,29 @@ class DeathCauses:
         self.db_write.store_data(collection, mongo_data_covid_vs_all_deaths)
 
 
+class OutbreaksDescription:
+    """Outbreaks description in Spain"""
+
+    def __init__(self):
+        """Load the dataset"""
+        # Connection to the extracted data database for reading, and to the analyzed data for writing
+        self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
+        self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
+
+        # Load the outbreaks description
+        self.outbreaks_description_df = pd.DataFrame(self.db_read.read_data('outbreaks_description'))
+
+    def move_data(self):
+        """Just move the data from the extracted to the analyzed database"""
+        self.__store_data__()
+
+    def __store_data__(self):
+        """Store the outbreaks description in the database"""
+        mongo_data = self.outbreaks_description_df.to_dict('records')
+        collection = 'outbreaks_description'
+        self.db_write.store_data(collection, mongo_data)
+
+
 class DataAnalysisTaskGroup(TaskGroup):
     """TaskGroup that analyzes all the downloaded and extracted data."""
 
@@ -342,6 +365,11 @@ class DataAnalysisTaskGroup(TaskGroup):
 
         analyze_deaths_data_op >> analyze_death_causes_op
 
+        PythonOperator(task_id='move_outbreaks_description',
+                       python_callable=DataAnalysisTaskGroup.move_outbreaks_description,
+                       task_group=self,
+                       dag=dag)
+
     @staticmethod
     def analyze_daily_cases():
         """Analyze the cases data in the daily COVID dataset"""
@@ -365,3 +393,9 @@ class DataAnalysisTaskGroup(TaskGroup):
         """Extract the top 10 death causes and compare them with COVID-19"""
         data = DeathCauses()
         data.process_and_store_data()
+
+    @staticmethod
+    def move_outbreaks_description():
+        """Move the outbreaks description from the extracted to the analyzed database"""
+        data = OutbreaksDescription()
+        data.move_data()

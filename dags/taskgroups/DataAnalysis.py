@@ -282,10 +282,8 @@ class DeathCauses:
 
         # Get the top 10 death causes for each age range and gender
         death_causes_top_10 = death_causes_total.sort_values(['age_range', 'total_deaths', 'gender'],
-                                                             ascending=False).groupby(['age_range', 'gender']).head(
-            10).reset_index()
+                                                             ascending=False).groupby(['age_range', 'gender']).head(10)
         death_causes_top_10['total_deaths'] = death_causes_top_10['total_deaths'].round().astype("int")
-        death_causes_top_10 = death_causes_top_10.set_index('death_cause')
         self.death_causes_top_10 = death_causes_top_10
 
         # Calculate the percentage of deaths produced by COVID
@@ -467,7 +465,7 @@ class TransmissionIndicators:
     def __store_data__(self):
         """Store the outbreaks description in the database"""
         mongo_data = self.transmission_indicators.to_dict('records')
-        collection = 'hospitals_pressure'
+        collection = 'transmission_indicators'
         self.db_write.store_data(collection, mongo_data)
 
 

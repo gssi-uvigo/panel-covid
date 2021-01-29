@@ -417,7 +417,8 @@ class HospitalsPressure:
 
         # Load the hospitals pressure data
         self.hospitals_pressure = self.db_read.read_data('hospitals_pressure',
-                                                         projection=['hospitalized_patients', 'beds_percentage',
+                                                         projection=['autonomous_region', 'date',
+                                                                     'hospitalized_patients', 'beds_percentage',
                                                                      'ic_patients', 'ic_beds_percentage'])
 
     def move_data(self):

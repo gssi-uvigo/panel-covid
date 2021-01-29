@@ -318,10 +318,10 @@ class DiagnosticTests:
 
         # Load the diagnostic tests, Spanish population and COVID cases datasets
         self.diagnostic_tests_df = self.db_read.read_data('diagnostic_tests')
-        self.population_df = self.db_read.read_data('population_ar', {'age_range': 'Total'},
+        self.population_df = self.db_read.read_data('population_ar', {'age_range': 'total'},
                                                     ['autonomous_region', 'total'])
         self.new_cases_df = self.db_read.read_data('daily_data', {'age_range': 'total', 'gender': 'total'},
-                                                   ['age_range', 'total_deaths', 'gender'])
+                                                   ['date', 'autonomous_region', 'new_cases'])
 
     def __process_dataset__(self):
         """
@@ -330,7 +330,7 @@ class DiagnosticTests:
         """
         # Number of tests and average positivity in the whole country
         diagnostics_grouped = self.diagnostic_tests_df.groupby('date')
-        diagnostics_total_tests = diagnostics_grouped['diagnostic_tests'].sum()
+        diagnostics_total_tests = diagnostics_grouped['total_diagnostic_tests'].sum()
         diagnostics_avg_positivity = diagnostics_grouped['positivity'].mean()
         diagnostics_df_total = pd.merge(diagnostics_total_tests, diagnostics_avg_positivity,
                                         on='date').reset_index()
@@ -340,11 +340,12 @@ class DiagnosticTests:
         self.diagnostic_tests_df = self.diagnostic_tests_df.sort_values(by=['date', 'autonomous_region'])
 
         # Number of total tests
-        diagnostic_tests_df_total = self.diagnostic_tests_df[['date', 'autonomous_region', 'diagnostic_tests']] \
+        diagnostic_tests_df_total = self.diagnostic_tests_df[['date', 'autonomous_region', 'total_diagnostic_tests']] \
             .groupby(['date', 'autonomous_region']).sum().groupby('autonomous_region').cumsum().reset_index()
         self.diagnostic_tests_df = pd.merge(self.diagnostic_tests_df, diagnostic_tests_df_total,
                                             on=['date', 'autonomous_region']).rename(
-            columns={'diagnostic_tests_x': 'new_diagnostic_tests', 'diagnostic_tests_y': 'total_diagnostic_tests'})
+            columns={'total_diagnostic_tests_x': 'new_diagnostic_tests',
+                     'total_diagnostic_tests_y': 'total_diagnostic_tests'})
 
         # Average positivity for each Autonomous Region
         diagnostic_tests_df_avg_positivity = self.diagnostic_tests_df[
@@ -358,7 +359,7 @@ class DiagnosticTests:
                                             on=['date', 'autonomous_region'])
 
         # Total tests / 100 000 inhabitants
-        diagnostics_population_df = pd.merge(self.diagnostic_tests_df, self.population_df, on='autonomous_region')\
+        diagnostics_population_df = pd.merge(self.diagnostic_tests_df, self.population_df, on='autonomous_region') \
             .rename(columns={'total': 'population'})
         diagnostics_population_df['total_tests_per_population'] = 100000 * diagnostics_population_df[
             'total_diagnostic_tests'] / diagnostics_population_df['population']
@@ -409,6 +410,7 @@ class OutbreaksDescription:
 
 class HospitalsPressure:
     """Hospitals pressure in Spain"""
+
     def __init__(self):
         """Load the dataset"""
         # Connection to the extracted data database for reading, and to the analyzed data for writing
@@ -416,8 +418,9 @@ class HospitalsPressure:
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
         # Load the hospitals pressure data
-        self.hospitals_pressure = self.db_read.read_data('hospitals_pressure', projection=
-        ['hospitalized_patients', 'beds_percentage', 'ic_patients', 'ic_beds_percentage'])
+        self.hospitals_pressure = self.db_read.read_data('hospitals_pressure',
+                                                         projection=['hospitalized_patients', 'beds_percentage',
+                                                                     'ic_patients', 'ic_beds_percentage'])
 
     def move_data(self):
         """Just move the data from the extracted to the analyzed database"""

@@ -251,7 +251,7 @@ class RenavePDFfReport(PDFReport):
 
                 transmission_indicators_report.append({
                     'date': self.date,
-                    'autonomous_region': ar,
+                    'autonomous_region': PDFReport.get_real_autonomous_region_name(ar),
                     'transmission_indicators': {
                         'cases_unknown_contact': {
                             'total': cases_unknown_contact_total,

@@ -219,8 +219,8 @@ class MHealthPDFReport(PDFReport):
 
                 outbreaks_description_report.append({
                     'date': self.date - td(days=1),
-                    'scope': scope,
-                    'subscope': current_key,
+                    'scope': scope.replace('_', ' '),
+                    'subscope': scope.replace('_', ' ') + ' - ' + current_key.replace('_', ' '),
                     'outbreaks': {
                         'number': accumulated_outbreaks_number,
                         'cases': accumulated_cases_number,

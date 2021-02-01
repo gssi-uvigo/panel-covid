@@ -421,8 +421,19 @@ class HospitalsPressure:
                                                                      'hospitalized_patients', 'beds_percentage',
                                                                      'ic_patients', 'ic_beds_percentage'])
 
-    def move_data(self):
-        """Just move the data from the extracted to the analyzed database"""
+    def __aggregate_data__(self):
+        """Calculate the data for the whole country"""
+        pressure_grouped = self.hospitals_pressure.groupby('date')
+        pressure_patients = pressure_grouped[['hospitalized_patients', 'ic_patients']].sum()
+        pressure_beds_percentage = pressure_grouped[['beds_percentage', 'ic_beds_percentage']].mean()
+        hospitals_pressure_total = pd.merge(pressure_patients, pressure_beds_percentage, on='date').reset_index()
+        hospitals_pressure_total['autonomous_region'] = 'España'
+        self.hospitals_pressure = pd.concat([self.hospitals_pressure, hospitals_pressure_total])
+        self.hospitals_pressure = self.hospitals_pressure.sort_values(by=['date', 'autonomous_region'])
+
+    def transform_and_store(self):
+        """Analyze the data, calculate some new variables, and store the results to the database"""
+        self.__aggregate_data__()
         self.__store_data__()
 
     def __store_data__(self):
@@ -458,9 +469,18 @@ class TransmissionIndicators:
             lambda x: x['asymptomatic_percentage'])
         self.transmission_indicators = ti_df.drop(columns='transmission_indicators')
 
+    def __aggregate_data__(self):
+        """Calculate the data for the whole country"""
+        grouped_data = self.transmission_indicators.groupby('date')
+        grouped_df = grouped_data.mean().reset_index()
+        grouped_df['autonomous_region'] = 'España'
+        self.transmission_indicators = pd.concat([self.transmission_indicators, grouped_df])
+        self.transmission_indicators = self.transmission_indicators.sort_values(by=['date', 'autonomous_region'])
+
     def move_data(self):
         """Just move the data from the extracted to the analyzed database"""
         self.__transform_data__()
+        self.__aggregate_data__()
         self.__store_data__()
 
     def __store_data__(self):
@@ -557,7 +577,7 @@ class DataAnalysisTaskGroup(TaskGroup):
     def move_hospitals_pressure():
         """Move the hospitals pressure data from the extracted to the analyzed database"""
         data = HospitalsPressure()
-        data.move_data()
+        data.transform_and_store()
 
     @staticmethod
     def analyze_diagnostic_tests():

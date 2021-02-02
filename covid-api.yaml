@@ -1,0 +1,195 @@
+openapi: '3.0.2'
+info:
+  title: COVID Spain data
+  description: 'Información diaria sobre la evolución de la pandemia de COVID-19 en España.'
+  version: '1'
+servers:
+  - url: https://localhost:11223
+
+components:
+  schemas:
+    Gender:
+      title: Sexo
+      type: string
+      default: total
+      example: F
+      enum:
+        - "M"
+        - "F"
+        - "total"
+      description: >
+        * `M` - Hombres
+
+        * `F` - Mujeres
+
+        * `total` - Total
+        
+    AutonomousRegion:
+      title: Comunidad Autónoma
+      type: string
+      default: España
+      example: Galicia
+      enum:
+        - "España"
+        - "Andalucía"
+        - "Aragón"
+        - "Asturias"
+        - "Baleares"
+        - "Canarias"
+        - "Cantabria"
+        - "Castilla y León"
+        - "Castilla-La Mancha"
+        - "Cataluña"
+        - "Ceuta"
+        - "Comunidad Valenciana"
+        - "Extremadura"
+        - "Galicia"
+        - "La Rioja"
+        - "Madrid"
+        - "Melilla"
+        - "Murcia"
+        - "Navarra"
+        - "País Vasco"
+
+    AgeRange:
+      title: Rango de edad
+      type: string
+      default: total
+      example: 20-29
+      enum:
+        - "0-9"
+        - "10-19"
+        - "20-29"
+        - "30-39"
+        - "40-49"
+        - "50-59"
+        - "60-69"
+        - "70-79"
+        - "80+"
+        - "total"
+
+    endpoints_list:
+      title: Lista de endpoints
+      type: array
+      items:
+        type: string
+      example: ["/cases", "/deaths", "/hospitalizations"]
+    
+    daily_cases:
+      title: Casos diarios
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        gender:
+          $ref: '#/components/schemas/Gender'
+        autonomous_region:
+          $ref: '#/components/schemas/AutonomousRegion'
+        age_range:
+          $ref: '#/components/schemas/AgeRange'
+        cases:
+          type: object
+          properties:
+            new_cases:
+              type: integer
+              description: Número nuevo de casos
+              example: 100
+            total_cases:
+              type: integer
+              description: Número de casos acumulados hasta la fecha
+              example: 1000
+            new_cases_per_population:
+              type: number
+              description: Número nuevo de casos por cada 100 000 habitantes 
+              example: 22.51
+            total_cases_per_population:
+              type: number
+              description: Número de casos acumulados hasta la fecha por cada 100 000 habitantes
+              example: 205.11            
+            ci_last_14_days:
+              type: number
+              description: Incidencia acumulada (IA) en los últimos 14 días, es decir, la suma de los casos nuevos registrados en los últimos 14 días por cada 100 000 habitantes
+              example: 455.2     
+            inverted_ci:
+              type: number
+              description: Incidencia acumulada en los últimos 14 días invertida. Se trata de una aproximación del número de personas de las cuales, de media, una estaría infectada.
+              example: 28.6
+            daily_increase:
+              type: number
+              description: Porcentaje de incremento del número de casos diarios respecto a la media móvil a 7 días del día anterior
+              example: 22.1
+            weekly_increase:
+              type: number
+              description: Porcentaje de incremento del número de casos diarios respecto a la media móvil a 14 días de hace 7 días
+              example: 65.4            
+            monthly_increase:
+              type: number
+              description: Porcentaje de incremento del número de casos diarios respecto a la media móvil a 60 días de hace 30 días
+              example: -11.1           
+            new_cases_ma_1w:
+              type: number
+              description: Media móvil a 7 días del número de casos diarios
+              example: 9211.5           
+            new_cases_ma_2w:
+              type: number
+              description: Media móvil a 14 días del número de casos diarios
+              example: 9801.1                                               
+
+paths:
+  /:
+    get:
+      summary: Endpoints de la API
+      description: Devuelve una lista con todos los endpoints disponibles en esta API
+      responses:
+        '200':
+          description: Lista con todos los endpoints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/endpoints_list'
+              
+  /cases:
+    get:
+      summary: Datos diarios de casos
+      description: Datos diarios de los casos de COVID detectados en España, clasificados por Comunidad Autónoma, sexo y rango de edad
+      parameters:
+        - in: query
+          name: autonomous_region
+          description: Filtrar por Comunidad Autónoma. Para obtener solamente los casos de todo el país, usar "España". Si no se especifica este parámetro, se devolverán los datos para cada una de las Comunidades Autónomas y para el país en conjunto.
+          schema:
+            $ref: '#/components/schemas/AutonomousRegion'
+        - in: query
+          name: age_range
+          description: Filtrar por rango de edad. Para los casos de todas las edades, usar "total". Si no se especifica este parámetro, se devolverán los datos para cada uno de los rangos de edad y para todas las edades en conjunto.
+          schema:
+            $ref: '#/components/schemas/AgeRange'
+        - in: query
+          name: gender
+          description: Filtrar por sexo. Para los casos de ambos sexos, usar "total". Si no se especifica este parámetro, se devolverán los datos para los hombres, mujeres y en conjunto.
+          schema:
+            $ref: '#/components/schemas/Gender'
+        - in: query
+          name: date
+          description: Filtrar por fecha. Si no se especifica este parámetro, se devolverán los datos para todos los días desde el 1 de enero de 2020.
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['new_cases', 'total_cases', 'new_cases_per_population', 'total_cases_per_population', 'ci_last_14_days', 'inverted_ci', 'daily_increase', 'weekly_increase', 'monthly_increase', 'new_cases_ma_1w', 'new_cases_ma_2w']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/daily_cases'

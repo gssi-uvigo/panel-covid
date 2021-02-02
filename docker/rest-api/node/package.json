@@ -1,0 +1,16 @@
+{
+  "name": "covid-rest-api",
+  "version": "1.0.0",
+  "description": "REST API that provides data about the COVID-19 pandemic in Spain",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Guillermo Barreiro Fernández <guillermo.barreiro@det.uvigo.es>",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "mongodb": "^3.6.3"
+  }
+}

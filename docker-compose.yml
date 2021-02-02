@@ -55,6 +55,15 @@ services:
     env_file:
       - ./docker/mongodb.env
 
+  airflow-api:
+    build: "./docker/rest-api"
+    ports:
+      - "11223:80"
+    networks:
+      - airflow
+    depends_on:
+      - airflow-database
+
 networks:
   airflow:
 volumes:

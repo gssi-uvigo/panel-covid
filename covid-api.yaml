@@ -35,15 +35,6 @@ components:
         format: date
         example: '2020-12-30'
         pattern: '\d{4}-d{2}-d{2}'
-    response_contents:
-      in: query
-      name: response_contents
-      description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
-      schema:
-        type: array
-        items:
-          type: string
-          enum: ['new_cases', 'total_cases', 'new_cases_per_population', 'total_cases_per_population', 'ci_last_14_days', 'inverted_ci', 'daily_increase', 'weekly_increase', 'monthly_increase', 'new_cases_ma_1w', 'new_cases_ma_2w']
     limit:
       in: query
       name: limit
@@ -117,14 +108,20 @@ components:
         - "80+"
         - "total"
 
-    endpoints_list:
+    OutbreakScope:
+      title: Ámbito de un brote
+      example: Laboral
+      type: string
+      enum: ['Laboral', 'Social', 'Familiar', 'Centro educativo', 'Mixto', 'Centro sanitario', 'Centro sociosanitario', Colectivos socialmente vulnerables', 'Otro']
+
+    EndpointsList:
       title: Lista de endpoints
       type: array
       items:
         type: string
       example: ["/cases", "/deaths", "/hospitalizations"]
     
-    daily_cases:
+    DailyCases:
       title: Casos diarios
       type: object
       properties:
@@ -181,9 +178,9 @@ components:
         new_cases_ma_2w:
           type: number
           description: Media móvil a 14 días del número de casos diarios
-          example: 9801.1                                               
+          example: 9801.1                                    
 
-    daily_deaths:
+    DailyDeaths:
       title: Fallecimientos diarios
       type: object
       properties:
@@ -242,7 +239,43 @@ components:
           description: Porcentaje acumulado de casos que han acabado en fallecimiento
           example: 4.22
 
-    hospitalizations:
+    DiagnosticTests:
+      title: Tests diagnósticos
+      description: Tests diagnósticos realizados por día y Comunidad Autónoma
+      type: object
+      properties:
+        date:
+          title: Fecha
+          type: string
+          format: date
+        autonomous_region:
+          $ref: '#/components/schemas/AutonomousRegion'
+        new_diagnostic_tests:
+          type: integer
+          description: Número nuevo de pruebas realizadas
+          example: 320
+        positivity:
+          type: number
+          description: Positividad diaria, es decir, el porcentaje de tests realizados ese día que han dado positivo
+          example: 8.11
+        total_diagnostic_tests:
+          type: integer
+          description: Número total de pruebas realizadas
+          example: 8700
+        average_positivity:
+          type: number
+          description: Positividad media diaria, es decir, el porcentaje de tests realizados hasta la fecha que han dado positivo
+          example: 12.15         
+        total_tests_per_population:
+          type: integer
+          description: Número total de tests por cada 100 000 habitantes realizados hasta la fecha
+          example: 72.10
+        new_cases:
+          type: integer
+          description: Número de casos nuevos detectados ese día
+          example: 1500
+
+    DailyHospitalizations:
       title: Hospitalizaciones diarias
       type: object
       properties:
@@ -345,7 +378,127 @@ components:
           description: Porcentaje acumulado de casos que han requerido hospitalización en UCI
           example: 4.22
 
-paths:
+    HospitalsPressure:
+      title: Presión hospitalaria
+      description: Presión hospitalaria por día y Comunidad Autónoma
+      type: object
+      properties:
+        date:
+          title: Fecha
+          type: string
+          format: date
+        autonomous_region:
+          $ref: '#/components/schemas/AutonomousRegion'
+        hospitalized_patients:
+          type: integer
+          description: Número nuevo de pacientes hospitalizados actualmente
+          example: 320
+        beds_percentage:
+          type: number
+          description: Porcentaje de camas de hospital ocupadas por pacientes COVID
+          example: 8.11
+        ic_patients:
+          type: integer
+          description: Número total de pacientes hospitalizados en UCI actualmente
+          example: 25
+        ic_beds_percentage:
+          type: number
+          description: Porcentaje de camas de UCI ocupadas por pacientes COVID
+          example: 22.15         
+
+    OutbreaksDescription:
+      title: Descripción de brotes
+      description: Número de brotes y casos acumulados por ámbito
+      type: object
+      properties:
+        date:
+          title: Fecha
+          type: string
+          format: date
+        scope:
+          $ref: '#/components/schemas/OutbreakScope'
+        subscope:
+          type: string
+          title: Subámbito en el que se produjo un brote
+          example: 'Centro sanitario - hospital'
+        outbreaks.number:
+          type: integer
+          description: Número total de brotes hasta la fecha
+          example: 200
+        outbreaks.cases:
+          type: integer
+          description: Número total de casos hasta la fecha
+          example: 600
+        outbreaks.cases_per_outbreak:
+          type: number
+          description: Número medio de casos por brote
+          example: 3.0
+
+    TopDeathCauses:
+      title: Causas de muerte
+      description: Número de fallecidos por causa, rango de edad y sexo.
+      type: object
+      properties:
+        age_range:
+          $ref: '#/components/schemas/AgeRange'
+        gender:
+          $ref: '#/components/schemas/Gender'
+        death_cause:
+          type: string
+          description: Causa de muerte
+          example: 'COVID-19'
+        total_deaths:
+          type: integer
+          description: Número de fallecidos por esa causa
+          example: 921
+
+    CovidVsAllDeaths:
+      title: Porcentaje de fallecimientos por COVID
+      description: Porcentaje de fallecimientos debidos al COVID para cada sexo y rango de edad
+      type: object
+      properties:
+        age_range:
+          $ref: '#/components/schemas/AgeRange'
+        gender:
+          $ref: '#/components/schemas/Gender'
+        covid_deaths:
+          type: integer
+          description: Número de muertes por COVID
+          example: 27
+        total_deaths:
+          type: integer
+          description: Número de muertes por causas distintas al COVID
+          example: 6588
+        covid_percentage:
+          type: number
+          description: Porcentaje de muertes debidas al COVID
+          example: 1.15
+
+    TransmissionIndicators:
+      title: Indicadores de transmisión
+      description: Porcentaje de casos sin contacto estrecho con infectado, porcentaje de asintomáticos y número medio de contactos estrechos por caso identificados. Datos por fecha (frecuencia semanal aproximadamente) y Comunidad Autónoma
+      type: object
+      properties:
+        autonomous_region:
+          $ref: '#/components/schemas/AutonomousRegion'
+        date:
+          title: Fecha
+          type: string
+          format: date
+        cases_unknown_contact:
+          type: number
+          description: Porcentaje de casos que no se pudieron asociar a un contacto estrecho con un infectado de COVID
+          example: 46.2
+        identified_contacts_per_case:
+          type: integer
+          description: Número medio de contactos estrechos identificados por caso
+          example: 2
+        asymptomatic_percentage:
+          type: number
+          description: Porcentaje de casos que no presentan síntomas
+          example: 33.1
+
+paths:    
   /:
     get:
       summary: Endpoints de la API
@@ -356,7 +509,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/endpoints_list'
+                $ref: '#/components/schemas/EndpointsList'
               
   /cases:
     get:
@@ -367,9 +520,16 @@ paths:
         - $ref: '#/components/parameters/age_range'
         - $ref: '#/components/parameters/gender'
         - $ref: '#/components/parameters/date'
-        - $ref: '#/components/parameters/response_contents'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['new_cases', 'total_cases', 'new_cases_per_population', 'total_cases_per_population', 'ci_last_14_days', 'inverted_ci', 'daily_increase', 'weekly_increase', 'monthly_increase', 'new_cases_ma_1w', 'new_cases_ma_2w']
 
       responses:
         '200':
@@ -379,7 +539,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/daily_cases'
+                  $ref: '#/components/schemas/DailyCases'
 
   /deaths:
     get:
@@ -390,9 +550,16 @@ paths:
         - $ref: '#/components/parameters/age_range'
         - $ref: '#/components/parameters/gender'
         - $ref: '#/components/parameters/date'
-        - $ref: '#/components/parameters/response_contents'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['new_deaths', 'total_deaths', 'new_deaths_per_population', 'total_deaths_per_population', daily_increase', 'weekly_increase', 'monthly_increase', 'new_deaths_ma_1w', 'new_deaths_ma_2w', 'mortality_2w', 'mortality_total']
 
       responses:
         '200':
@@ -402,7 +569,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/daily_deaths'
+                  $ref: '#/components/schemas/DailyDeaths'
 
   /hospitalizations:
     get:
@@ -413,9 +580,16 @@ paths:
         - $ref: '#/components/parameters/age_range'
         - $ref: '#/components/parameters/gender'
         - $ref: '#/components/parameters/date'
-        - $ref: '#/components/parameters/response_contents'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['new_hospitalizations', 'total_hospitalizations', 'new_hospitalizations_per_population', 'total_hospitalizations_per_population', hospitalizations_daily_increase', 'hospitalizations_weekly_increase', 'hospitalizations_monthly_increase', 'new_hospitalizations_ma_1w', 'new_hospitalizations_ma_2w', 'hospitalization_ratio_2w', 'hospitalization_ratio_total', 'new_ic_hospitalizations', 'total_ic_hospitalizations', 'new_ic_hospitalizations_per_population', 'total_ic_hospitalizations_per_population', ic_daily_increase', 'ic_weekly_increase', 'ic_monthly_increase', 'new_ic_ma_1w', 'new_ic_ma_2w', 'hospitalization_ic_ratio_2w', 'hospitalization_ic_ratio_total']
 
       responses:
         '200':
@@ -425,4 +599,182 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/daily_hospitalizations'
+                  $ref: '#/components/schemas/DailyHospitalizations'
+
+  /diagnostic_tests:
+    get:
+      summary: Datos diarios de tests diagnósticos
+      description: Datos diarios de los tests diagnósticos de COVID realizados en España, clasificados por Comunidad Autónoma
+      parameters:
+        - $ref: '#/components/parameters/autonomous_region'
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['new_diagnostic_tests', 'positivity', 'total_diagnostic_tests', 'average_positivity', total_tests_per_population', 'new_cases']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiagnosticTests'
+
+  /hospitals_pressure:
+    get:
+      summary: Datos diarios de presión hospitalaria
+      description: Datos diarios de la presión hospitalaria causada por el COVID en España, clasificados por Comunidad Autónoma
+      parameters:
+        - $ref: '#/components/parameters/autonomous_region'
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['hospitalized_patients', 'beds_percentage', 'ic_patients', 'ic_beds_percentage']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HospitalsPressure'
+
+  /outbreaks_description:
+    get:
+      summary: Número de brotes y casos acumulados por ámbito
+      description: Número de brotes, casos y casos por brote acumulados por ámbito. Datos disponibles para varias fechas.
+      parameters:
+        - $ref: '#/components/parameters/date'
+        - in: query
+          name: scope
+          description: Ámbito en el que se produjo el brote 
+          schema:
+            $ref: '#/components/schemas/OutbreakScope'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['scope', 'subscope', 'outbreaks.number', 'outbreaks.cases', 'outbreaks.cases_per_outbreak']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutbreaksDescription'
+
+  /top_death_causes:
+    get:
+      summary: Causas de muerte en España
+      description: Número de fallecidos por las 10 causas de muerte más letales, incluyendo COVID. Datos por sexo y rango de edad.
+      parameters:
+        - $ref: '#/components/parameters/gender'
+        - $ref: '#/components/parameters/age_range'
+        - in: query
+          name: death_cause
+          description: Causa de muerte
+          schema:
+            type: string
+            example: Enfermedades del sistema circulatorio
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['gender', 'age_range', 'death_cause', 'total_deaths']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopDeathCauses'
+
+  /covid_vs_all_deaths:
+    get:
+      summary: Porcentaje de fallecimientos por COVID
+      description: Porcentaje de fallecimientos debidos al COVID para cada sexo y rango de edad
+      parameters:
+        - $ref: '#/components/parameters/gender'
+        - $ref: '#/components/parameters/age_range'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['gender', 'age_range', 'covid_deaths', 'other_deaths', 'covid_percentage']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CovidVsAllDeaths'
+
+  /transmission_indicators:
+    get:
+      summary: Indicadores de transmisión
+      description: Porcentaje de casos sin contacto estrecho con infectado, porcentaje de asintomáticos y número medio de contactos estrechos por caso identificados. Datos por fecha (frecuencia semanal aproximadamente) y Comunidad Autónoma.
+      parameters:
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/autonomous_region'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['date', 'autonomous_region', 'cases_unknown_contact', 'identified_contacts_per_case', 'asymptomatic_percentage']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransmissionIndicators'

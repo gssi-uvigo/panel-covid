@@ -1,6 +1,6 @@
 const { query } = require("express");
 
-const endpoints_list = ['/', '/cases', '/deaths', '/hospitalizations']
+const endpoints_list = ['/', '/cases', '/deaths', '/hospitalizations', '/hospitals_pressure', '/diagnostic_tests', '/covid_vs_all_deaths', '/outbreaks_description', '/top_death_causes', '/transmission_indicators']
 
 /**
  * Log a request datetime, client IP, method, endpoint and response status code in the console.
@@ -113,7 +113,7 @@ const router = (app, db) => {
      * GET /deaths
      * Return the daily deaths data.
     */
-   app.get('/deaths', (request, response) => {
+    app.get('/deaths', (request, response) => {
         // Get the request parameters, if any
         const filters = getQueryFilters(request, ['autonomous_region', 'age_range', 'gender', 'date'])
 
@@ -129,13 +129,13 @@ const router = (app, db) => {
 
         // Log the request in the console
         logRequest(request, response);
-    });
+        });
 
     /** 
      * GET /hospitalizations
      * Return the daily hospitalizations data.
     */
-   app.get('/hospitalizations', (request, response) => {
+    app.get('/hospitalizations', (request, response) => {
         // Get the request parameters, if any
         const filters = getQueryFilters(request, ['autonomous_region', 'age_range', 'gender', 'date'])
 
@@ -144,6 +144,116 @@ const router = (app, db) => {
 
         // Query the database for the daily hospitalizations
         const query = db.collection('hospitalizations').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+        });
+
+    /** 
+     * GET /diagnostic_tests
+     * Return the daily diagnostic tests data.
+    */
+    app.get('/diagnostic_tests', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['autonomous_region', 'date'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database for the daily diagnostic tests
+        const query = db.collection('diagnostic_tests').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+        });
+
+    /** 
+     * GET /outbreaks_description
+     * Return the available outbreaks data.
+    */
+    app.get('/outbreaks_description', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['scope', 'date'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database for the outbreaks description data
+        const query = db.collection('outbreaks_description').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+
+    /** 
+     * GET /top_death_causes
+     * Return the top death causes in Spain.
+    */
+    app.get('/top_death_causes', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['gender', 'age_range', 'death_cause'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database for the top death causes data
+        const query = db.collection('top_death_causes').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+    
+    /** 
+     * GET /covid_vs_all_deaths
+     * Return the percentage of deaths caused by COVID.
+    */
+    app.get('/covid_vs_all_deaths', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['gender', 'age_range'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database for the percentage of deaths caused by COVID
+        const query = db.collection('covid_vs_all_deaths').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+    
+    /** 
+     * GET /transmission_indicators
+     * Return the transmission indicators.
+    */
+    app.get('/transmission_indicators', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['date', 'autonomous_region'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database for the percentage of deaths caused by COVID
+        const query = db.collection('transmission_indicators').find(filters).project(projection)
         limitQuerySize(request, query).toArray(function (err, result) {
             if (err) response.sendStatus(500);
             response.send(result);

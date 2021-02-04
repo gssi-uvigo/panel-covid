@@ -1,5 +1,3 @@
-const { query } = require("express");
-
 const endpoints_list = ['/', '/cases', '/deaths', '/hospitalizations', '/hospitals_pressure', '/diagnostic_tests', '/covid_vs_all_deaths', '/outbreaks_description', '/top_death_causes', '/transmission_indicators']
 
 /**

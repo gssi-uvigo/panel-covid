@@ -129,6 +129,7 @@ components:
       type: object
       properties:
         date:
+          title: Fecha
           type: string
           format: date
         gender:
@@ -182,6 +183,168 @@ components:
           description: Media móvil a 14 días del número de casos diarios
           example: 9801.1                                               
 
+    daily_deaths:
+      title: Fallecimientos diarios
+      type: object
+      properties:
+        date:
+          title: Fecha
+          type: string
+          format: date
+        gender:
+          $ref: '#/components/schemas/Gender'
+        autonomous_region:
+          $ref: '#/components/schemas/AutonomousRegion'
+        age_range:
+          $ref: '#/components/schemas/AgeRange'
+        new_deaths:
+          type: integer
+          description: Número nuevo de fallecimientos
+          example: 100
+        total_deaths:
+          type: integer
+          description: Número de muertes acumuladas hasta la fecha
+          example: 1000
+        new_deaths_per_population:
+          type: number
+          description: Número nuevo de muertes por cada 100 000 habitantes 
+          example: 0.351
+        total_deaths_per_population:
+          type: number
+          description: Número de muertes acumuladas hasta la fecha por cada 100 000 habitantes
+          example: 2.11            
+        daily_increase:
+          type: number
+          description: Porcentaje de incremento del número de fallecimientos diarios respecto a la media móvil a 7 días del día anterior
+          example: 22.1
+        weekly_increase:
+          type: number
+          description: Porcentaje de incremento del número de fallecimientos diarios respecto a la media móvil a 14 días de hace 7 días
+          example: 65.4            
+        monthly_increase:
+          type: number
+          description: Porcentaje de incremento del número de fallecimientos diarios respecto a la media móvil a 60 días de hace 30 días
+          example: -11.1           
+        new_deaths_ma_1w:
+          type: number
+          description: Media móvil a 7 días del número de fallecimientos diarios
+          example: 92.5           
+        new_deaths_ma_2w:
+          type: number
+          description: Media móvil a 14 días del número de fallecimientos diarios
+          example: 98.1    
+        mortality_2w:
+          type: number
+          description: Porcentaje de casos que han acabado en fallecimiento en las últimas 2 semanas
+          example: 2.21
+        mortality_total:
+          type: number
+          description: Porcentaje acumulado de casos que han acabado en fallecimiento
+          example: 4.22
+
+    hospitalizations:
+      title: Hospitalizaciones diarias
+      type: object
+      properties:
+        date:
+          title: Fecha
+          type: string
+          format: date
+        gender:
+          $ref: '#/components/schemas/Gender'
+        autonomous_region:
+          $ref: '#/components/schemas/AutonomousRegion'
+        age_range:
+          $ref: '#/components/schemas/AgeRange'
+        new_hospitalizations:
+          type: integer
+          description: Número nuevo de hospitalizaciones
+          example: 100
+        total_hospitalizations:
+          type: integer
+          description: Número de hospitalizaciones acumuladas hasta la fecha
+          example: 1000
+        new_hospitalizations_per_population:
+          type: number
+          description: Número nuevo de hospitalizaciones por cada 100 000 habitantes 
+          example: 0.351
+        total_hospitalizations_per_population:
+          type: number
+          description: Número de hospitalizaciones acumuladas hasta la fecha por cada 100 000 habitantes
+          example: 2.11            
+        hospitalizations_daily_increase:
+          type: number
+          description: Porcentaje de incremento del número de hospitalizaciones diarias respecto a la media móvil a 7 días del día anterior
+          example: 22.1
+        hospitalizations_weekly_increase:
+          type: number
+          description: Porcentaje de incremento del número de hospitalizaciones diarias respecto a la media móvil a 14 días de hace 7 días
+          example: 65.4            
+        hospitalizations_monthly_increase:
+          type: number
+          description: Porcentaje de incremento del número de hospitalizaciones diarias respecto a la media móvil a 60 días de hace 30 días
+          example: -11.1           
+        new_hospitalizations_ma_1w:
+          type: number
+          description: Media móvil a 7 días del número de hospitalizaciones diarias
+          example: 92.5           
+        new_hospitalizations_ma_2w:
+          type: number
+          description: Media móvil a 14 días del número de hospitalizaciones diarias
+          example: 98.1    
+        hospitalizations_ratio_2w:
+          type: number
+          description: Porcentaje de casos que han requerido hospitalización en las últimas 2 semanas
+          example: 2.21
+        hospitalizations_ratio_total:
+          type: number
+          description: Porcentaje acumulado de casos que han requerido hospitalización
+          example: 4.22
+        new_ic_hospitalizations:
+          type: integer
+          description: Número nuevo de hospitalizaciones en UCI
+          example: 100
+        total_ic_hospitalizations:
+          type: integer
+          description: Número de hospitalizaciones en UCI acumuladas hasta la fecha
+          example: 1000
+        new_ic_hospitalizations_per_population:
+          type: number
+          description: Número nuevo de hospitalizaciones en UCI por cada 100 000 habitantes 
+          example: 0.351
+        total_ic_hospitalizations_per_population:
+          type: number
+          description: Número de hospitalizaciones en UCI acumuladas hasta la fecha por cada 100 000 habitantes
+          example: 2.11            
+        hospitalizations_ic_daily_increase:
+          type: number
+          description: Porcentaje de incremento del número de hospitalizaciones en UCI diarias respecto a la media móvil a 7 días del día anterior
+          example: 22.1
+        hospitalizations_ic_weekly_increase:
+          type: number
+          description: Porcentaje de incremento del número de hospitalizaciones en UCI diarias respecto a la media móvil a 14 días de hace 7 días
+          example: 65.4            
+        hospitalizations_ic_monthly_increase:
+          type: number
+          description: Porcentaje de incremento del número de hospitalizaciones en UCI diarias respecto a la media móvil a 60 días de hace 30 días
+          example: -11.1           
+        new_hospitalizations_ic_ma_1w:
+          type: number
+          description: Media móvil a 7 días del número de hospitalizaciones en UCI diarias
+          example: 92.5           
+        new_hospitalizations_ic_ma_2w:
+          type: number
+          description: Media móvil a 14 días del número de hospitalizaciones en UCI diarias
+          example: 98.1    
+        hospitalizations_ic_ratio_2w:
+          type: number
+          description: Porcentaje de casos que han requerido hospitalización en UCI en las últimas 2 semanas
+          example: 2.21
+        hospitalizations_ic_ratio_total:
+          type: number
+          description: Porcentaje acumulado de casos que han requerido hospitalización en UCI
+          example: 4.22
+
 paths:
   /:
     get:
@@ -217,3 +380,49 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/daily_cases'
+
+  /deaths:
+    get:
+      summary: Datos diarios de fallecimientos
+      description: Datos diarios de los fallecimientos de COVID detectados en España, clasificados por Comunidad Autónoma, sexo y rango de edad
+      parameters:
+        - $ref: '#/components/parameters/autonomous_region'
+        - $ref: '#/components/parameters/age_range'
+        - $ref: '#/components/parameters/gender'
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/response_contents'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/daily_deaths'
+
+  /hospitalizations:
+    get:
+      summary: Datos diarios de hospitalizaciones
+      description: Datos diarios de las hospitalizaciones por COVID en España, clasificados por Comunidad Autónoma, sexo y rango de edad
+      parameters:
+        - $ref: '#/components/parameters/autonomous_region'
+        - $ref: '#/components/parameters/age_range'
+        - $ref: '#/components/parameters/gender'
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/response_contents'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/daily_hospitalizations'

@@ -1,6 +1,6 @@
 const { query } = require("express");
 
-const endpoints_list = ['/', '/cases']
+const endpoints_list = ['/', '/cases', '/deaths', '/hospitalizations']
 
 /**
  * Log a request datetime, client IP, method, endpoint and response status code in the console.
@@ -100,6 +100,50 @@ const router = (app, db) => {
 
         // Query the database for the daily cases
         const query = db.collection('cases').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+
+    /** 
+     * GET /deaths
+     * Return the daily deaths data.
+    */
+   app.get('/deaths', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['autonomous_region', 'age_range', 'gender', 'date'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database for the daily deaths
+        const query = db.collection('deaths').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+
+    /** 
+     * GET /hospitalizations
+     * Return the daily hospitalizations data.
+    */
+   app.get('/hospitalizations', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['autonomous_region', 'age_range', 'gender', 'date'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database for the daily hospitalizations
+        const query = db.collection('hospitalizations').find(filters).project(projection)
         limitQuerySize(request, query).toArray(function (err, result) {
             if (err) response.sendStatus(500);
             response.send(result);

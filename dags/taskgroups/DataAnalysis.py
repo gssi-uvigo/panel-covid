@@ -495,8 +495,8 @@ class TransmissionIndicators:
         self.transmission_indicators = pd.concat([self.transmission_indicators, grouped_df])
         self.transmission_indicators = self.transmission_indicators.sort_values(by=['date', 'autonomous_region'])
 
-    def move_data(self):
-        """Just move the data from the extracted to the analyzed database"""
+    def transform_and_store(self):
+        """Transform, aggregate, and store the data"""
         self.__transform_data__()
         self.__aggregate_data__()
         self.__store_data__()
@@ -607,4 +607,4 @@ class DataAnalysisTaskGroup(TaskGroup):
     def move_transmission_indicators():
         """Move the transmission indicators data from the extracted to the analyzed database"""
         data = TransmissionIndicators()
-        data.move_data()
+        data.transform_and_store()

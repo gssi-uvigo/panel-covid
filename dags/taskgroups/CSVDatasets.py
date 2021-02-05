@@ -183,23 +183,6 @@ class DeathCausesDataset(CSVDataset):
         self.df = death_causes
 
 
-class ChronicIllnessesDataset(CSVDataset):
-    """Represent a dataset containing the prevalence of chronic illnesses among Spanish population"""
-
-    def __process_dataset__(self):
-        chronic_df = self.df
-        chronic_df.rename(
-            columns={'Principales enfermedades crónicas o de larga evolución': 'illness', 'Sexo': 'gender',
-                     'Total': 'percentage'}, inplace=True)
-        chronic_df['gender'] = chronic_df['gender'].replace(CSVDataset.gender_translations)
-        chronic_df = chronic_df.pivot(index=['illness'], columns='gender', values='percentage')
-        chronic_mongo = [{'illness': x, 'M': y['M'], 'F': y['F']} for x, y in
-                         chronic_df.to_dict('index').items()]
-
-        self.df = chronic_df
-        self.mongo_data = chronic_mongo
-
-
 # endregion
 
 
@@ -230,12 +213,6 @@ class CSVDatasetsTaskGroup(TaskGroup):
                                                   task_group=self,
                                                   dag=dag)
 
-        download_chronic_illnesses_op = PythonOperator(task_id='download_chronic_illnesses',
-                                                       python_callable=CSVDatasetsTaskGroup.
-                                                       download_chronic_illnesses_dataset,
-                                                       task_group=self,
-                                                       dag=dag)
-
         download_aemet_data_op = PythonOperator(task_id='download_aemet_data',
                                                 python_callable=CSVDatasetsTaskGroup.download_aemet_data,
                                                 task_group=self,
@@ -256,12 +233,6 @@ class CSVDatasetsTaskGroup(TaskGroup):
                                                task_group=self,
                                                dag=dag)
 
-        store_chronic_illnesses_op = PythonOperator(task_id='store_chronic_illnesses',
-                                                    python_callable=CSVDatasetsTaskGroup.
-                                                    process_and_store_chronic_illnesses,
-                                                    task_group=self,
-                                                    dag=dag)
-
         store_ar_population_op = PythonOperator(task_id='store_population_ar',
                                                 python_callable=CSVDatasetsTaskGroup.process_and_store_ar_population,
                                                 task_group=self,
@@ -270,7 +241,6 @@ class CSVDatasetsTaskGroup(TaskGroup):
         [download_aemet_data_op, download_population_provinces_op] >> store_aemet_data_op
         download_death_causes_op >> store_death_causes_op
         download_daily_data_op >> store_daily_data_op
-        download_chronic_illnesses_op >> store_chronic_illnesses_op
         download_population_provinces_op >> store_ar_population_op
 
     # region Downloads
@@ -295,13 +265,6 @@ class CSVDatasetsTaskGroup(TaskGroup):
         download_csv_file('https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/6609.csv',
                           'death_causes.csv',
                           False)
-
-    @staticmethod
-    def download_chronic_illnesses_dataset():
-        """Download the dataset with the prevalence of chronic illnesses among Spanish population in 2017"""
-        download_csv_file(
-            'https://www.ine.es/jaxi/files/_px/es/csv_bdsc/t00/mujeres_hombres/tablas_1/l0/d03005.csv_bdsc?nocab=1',
-            'chronic_illnesses.csv', False)
 
     @staticmethod
     def download_aemet_data():
@@ -401,11 +364,5 @@ class CSVDatasetsTaskGroup(TaskGroup):
         dataset = DeathCausesDataset('csv_data/death_causes.csv')
         database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'death_causes')
-
-    @staticmethod
-    def process_and_store_chronic_illnesses():
-        dataset = ChronicIllnessesDataset('csv_data/chronic_illnesses.csv', separator=';', decimal=',')
-        database = MongoDatabase(MongoDatabase.extracted_db_name)
-        dataset.store_dataset(database, 'chronic_illnesses')
 
     # endregion

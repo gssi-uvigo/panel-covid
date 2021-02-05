@@ -22,6 +22,7 @@ from taskgroups.GoogleDatasets import GoogleDatasetsTaskGroup
 from taskgroups.CSVDatasets import CSVDatasetsTaskGroup
 from taskgroups.PDFMhealth import PDFMhealthTaskGroup
 from taskgroups.PDFRenave import PDFRenaveTaskGroup
+from taskgroups.VaccinationReports import VaccinationReportsTaskGroup
 
 dag_name = 'COVIDWorkflow'
 start_date = dt(2021, 1, 1)
@@ -38,7 +39,6 @@ dag = DAG(
 
 os.chdir('/home/airflow/covid')  # download the datasets into subfolders of the "covid" folder
 
-
 # endregion
 
 # region Airflow operators instantiation
@@ -47,6 +47,7 @@ dummy_end_op = DummyOperator(task_id='end', dag=dag)
 
 google_data = GoogleDatasetsTaskGroup(dag)
 csv_data = CSVDatasetsTaskGroup(dag)
+vaccination_data = VaccinationReportsTaskGroup(dag)
 renave_reports = PDFRenaveTaskGroup(dag)
 mhealth_reports = PDFMhealthTaskGroup(dag)
 analyze_extracted_data = DataAnalysisTaskGroup(dag)
@@ -55,6 +56,7 @@ analyze_extracted_data = DataAnalysisTaskGroup(dag)
 
 # region Airflow pipeline definition
 
-dummy_start_op >> [google_data, csv_data, renave_reports, mhealth_reports] >> analyze_extracted_data >> dummy_end_op
+dummy_start_op >> [google_data, csv_data, renave_reports, vaccination_data, mhealth_reports] >> analyze_extracted_data \
+    >> dummy_end_op
 
 # endregion

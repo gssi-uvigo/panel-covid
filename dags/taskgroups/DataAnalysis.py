@@ -238,6 +238,24 @@ class DailyCOVIDData:
         self.db_write.store_data('hospitalizations', hospitalizations_df.reset_index().to_dict('records'))
 
 
+class VaccinationData:
+    """Vaccination campaign progress in Spain"""
+
+    def __init__(self):
+        """Load the dataset"""
+        # Connection to the extracted data database for reading, and to the analyzed data for writing
+        self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
+        self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
+
+        # Load the vaccination data
+        self.vaccination_df = self.db_read.read_data('vaccination_df')
+
+    def move_data(self):
+        """Just move the data from the extracted to the analyzed database"""
+        for document in self.db_read.db.get_collection('vaccination').find({}):
+            self.db_write.db.get_collection('vaccination').insert(document)
+
+
 class DeathCauses:
     """Death causes in Spain"""
 

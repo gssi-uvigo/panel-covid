@@ -9,4 +9,4 @@ ENV LANG=en_US.UTF-8
 
 USER airflow
 RUN pip install 'apache-airflow[mongo]'
-RUN pip install --no-cache-dir --user beautifulsoup4 pandas PyPDF2
+RUN pip install --no-cache-dir --user beautifulsoup4 pandas PyPDF2 odfpy

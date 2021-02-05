@@ -65,13 +65,6 @@ class RenavePDFfReport(PDFReport):
             'fallo renal agudo': 'aki', 'otros síntomas': 'others'
         }
 
-        diseases_list = {
-            'una o más': 'one_or_more', 'enfermedad cardiaca': 'cardiac', 'enfermedad cardiovascular': 'cardiac',
-            'enfermedad respiratoria': 'respiratory', 'diabetes': 'diabetes', 'inmunodepresión': 'immunosuppression',
-            'enfermedad neuromuscular': 'neuromuscular', 'enfermedad hepática': 'liver', 'enfermedad renal': 'renal',
-            'cáncer': 'cancer', 'hipertensión arterial': 'hypertension', 'otra': 'other'
-        }
-
         table_number = 2  # the table number in RENAVE reports is always the same!
 
         clinic_description_report = []
@@ -88,9 +81,6 @@ class RenavePDFfReport(PDFReport):
             for before, after in symptoms_list.items():
                 clinic_page = clinic_page.replace(' ' + before + ' ', ' ' + after + ' ')
 
-            for before, after in diseases_list.items():
-                clinic_page = clinic_page.replace(' ' + before + ' ', ' ' + after + ' ')
-
             clinic_table = clinic_page.split()
 
             # Sometimes women column is before men column, other times after, we need to know
@@ -104,11 +94,6 @@ class RenavePDFfReport(PDFReport):
             table_symptoms_start = clinic_table.index('síntomas')
             table_symptoms_end = clinic_table.index('enfermedades_previas', table_symptoms_start)
             symptoms_table = clinic_table[table_symptoms_start + 1:table_symptoms_end]
-
-            # Previous diseases table
-            table_previous_diseases_start = clinic_table.index('enfermedades_previas')
-            table_previous_diseases_end = clinic_table.index('hospitalización', table_previous_diseases_start)
-            diseases_table = clinic_table[table_previous_diseases_start + 1:table_previous_diseases_end]
 
             # Look for symptoms
             for symptom in set(symptoms_list.values()):
@@ -148,58 +133,7 @@ class RenavePDFfReport(PDFReport):
 
                     clinic_description_report.append({
                         'date': self.date,
-                        'type': 'symptom',
-                        'description': symptom,
-                        'patients': {
-                            'total': {'samples': number_of_samples_total, 'number': number_of_patients_total,
-                                      'percentage': number_of_patients_percentage},
-                            'women': {'samples': number_of_samples_woman, 'number': number_of_women,
-                                      'percentage': number_of_women_percentage},
-                            'men': {'samples': number_of_samples_men, 'number': number_of_men,
-                                    'percentage': number_of_men_percentage}
-                        }
-                    })
-
-            # Look for diseases
-            for disease in set(diseases_list.values()):
-                if disease in diseases_table:
-                    row = diseases_table.index(disease) + (1 if is_samples_number_column else 0)
-
-                    # Number of patients
-                    number_of_patients_total = PDFReport.convert_value_to_number(diseases_table[row + 1])
-
-                    # Number of patients: percentage
-                    number_of_patients_percentage = PDFReport.convert_value_to_number(diseases_table[row + 2],
-                                                                                      is_float=True)
-
-                    # Number of women
-                    number_of_women = PDFReport.convert_value_to_number(
-                        diseases_table[row + (3 if index_women < index_men else 5)])
-
-                    # Number of women: percentage
-                    number_of_women_percentage = PDFReport.convert_value_to_number(
-                        diseases_table[row + (4 if index_women < index_men else 6)], is_float=True)
-
-                    # Number of men
-                    number_of_men = PDFReport.convert_value_to_number(
-                        diseases_table[row + (5 if index_women < index_men else 3)])
-
-                    # Number of men: percentage
-                    number_of_men_percentage = PDFReport.convert_value_to_number(
-                        diseases_table[row + (6 if index_women < index_men else 4)], is_float=True)
-
-                    # Number of samples = number of patients / percentage
-                    number_of_samples_total = PDFReport.get_number_of_samples(number_of_patients_percentage,
-                                                                              number_of_patients_total)
-                    number_of_samples_woman = PDFReport.get_number_of_samples(number_of_women_percentage,
-                                                                              number_of_women)
-                    number_of_samples_men = PDFReport.get_number_of_samples(number_of_men_percentage,
-                                                                            number_of_men)
-
-                    clinic_description_report.append({
-                        'date': self.date,
-                        'type': 'disease',
-                        'description': disease,
+                        'symptom': symptom,
                         'patients': {
                             'total': {'samples': number_of_samples_total, 'number': number_of_patients_total,
                                       'percentage': number_of_patients_percentage},

@@ -247,13 +247,37 @@ class VaccinationData:
         self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
-        # Load the vaccination data
-        self.vaccination_df = self.db_read.read_data('vaccination_df')
-
     def move_data(self):
         """Just move the data from the extracted to the analyzed database"""
         for document in self.db_read.db.get_collection('vaccination').find({}):
             self.db_write.db.get_collection('vaccination').insert(document)
+
+
+class SymptomsData:
+    """Most common symptoms"""
+
+    def __init__(self):
+        """Load the dataset"""
+        # Connection to the extracted data database for reading, and to the analyzed data for writing
+        self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
+        self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
+
+        self.symptoms_df = self.db_read.read_data('clinic_description', {'type': 'symptom', 'date': dt(2020, 5, 29)},
+                                                  ['symptom', 'patients.total.percentage'])
+
+    def move_data(self):
+        """Get the total percentage and store the data in the analyzed database"""
+        self.__transform_data__()
+        self.__store_data__()
+
+    def __transform_data__(self):
+        """Get only the total percentage"""
+        self.symptoms_df['percentage'] = self.symptoms_df['patients'].apply(lambda x: x['total']['percentage'])
+        self.symptoms_df = self.symptoms_df.drop(columns='patients')
+
+    def __store_data__(self):
+        """Store the processed data in the database"""
+        self.db_write.store_data('symptoms', self.symptoms_df)
 
 
 class DeathCauses:
@@ -561,6 +585,11 @@ class DataAnalysisTaskGroup(TaskGroup):
                        task_group=self,
                        dag=dag)
 
+        PythonOperator(task_id='move_symptoms',
+                       python_callable=DataAnalysisTaskGroup.move_symptoms_data,
+                       task_group=self,
+                       dag=dag)
+
     @staticmethod
     def analyze_daily_cases():
         """Analyze the cases data in the daily COVID dataset"""
@@ -608,3 +637,9 @@ class DataAnalysisTaskGroup(TaskGroup):
         """Move the transmission indicators data from the extracted to the analyzed database"""
         data = TransmissionIndicators()
         data.transform_and_store()
+
+    @staticmethod
+    def move_symptoms_data():
+        """Move the symptoms data from the extracted to the analyzed database"""
+        data = SymptomsData()
+        data.move_data()

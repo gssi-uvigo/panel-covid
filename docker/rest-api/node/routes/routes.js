@@ -261,6 +261,43 @@ const router = (app, db) => {
         logRequest(request, response);
     });
 
+    /** 
+     * GET /symptoms
+     * Return the most common symptoms.
+    */
+    app.get('/symptoms', (request, response) => {
+        // Query the database for the percentage of deaths caused by COVID
+        db.collection('symptoms').find().toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+
+    /** 
+     * GET /vaccination
+     * Return the vaccination data.
+    */
+    app.get('/vaccination', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['date', 'autonomous_region'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database for the percentage of deaths caused by COVID
+        const query = db.collection('vaccination').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+
     /**
      * Invalid endpoint
      */

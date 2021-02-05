@@ -498,6 +498,49 @@ components:
           description: Porcentaje de casos que no presentan síntomas
           example: 33.1
 
+    Vaccination:
+      title: Evolución de la campaña de vacunación
+      description: Número acumulado de vacunas recibidas y administradas y de personas completamente vacunadas por Comunidad Autónoma y día.
+      type: object
+      properties:
+        autonomous_region:
+          $ref: '#/components/schemas/AutonomousRegion'
+        date:
+          title: Fecha
+          type: string
+          format: date
+        received_doses:
+          type: object
+          description: Número total de dosis recibidas de cada tipo de vacuna
+          example: {'Moderna': 100, 'Pfizer': 300, 'total': 400}
+        applied_doses:
+          type: integer
+          description: Número total de dosis inyectadas
+          example: 250012
+        percentage_applied_doses:
+          type: number
+          description: Porcentaje de las dosis recibidas que han sido inyectadas
+          example: 87.1
+        number_fully_vaccinated_people:
+          type: integer
+          description: Número de personas que han recibido la pauta completa de la vacuna
+          example: 226102
+
+    Symptoms:
+      title: Síntomas más habituales provocados por el COVID
+      description: Porcentaje de pacientes sintomáticos que han experimentado algún síntoma
+      type: object
+      properties:
+        symptom:
+          title: Síntoma
+          type: string
+          example: cough
+        percentage:
+          title: Porcentaje de pacientes
+          type: number
+          example: 64.1
+
+
 paths:    
   /:
     get:
@@ -778,3 +821,46 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TransmissionIndicators'
+
+  /symptoms:
+    get:
+      summary: Síntomas más habituales
+      description: Descripción de los síntomas más habituales de los infectados sintomáticos de COVID en España a día 29 de mayo de 2020 (no hay información más reciente disponible).
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Symptoms'
+
+  /vaccination:
+    get:
+      summary: Evolución de la campaña de vacunación
+      description: Número acumulado de vacunas recibidas y administradas y de personas completamente vacunadas por Comunidad Autónoma y día.
+      parameters:
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/autonomous_region'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['date', 'autonomous_region', 'received_doses', 'applied_doses', 'percentage_applied_doses', 'number_fully_vaccinated_people']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vaccination'

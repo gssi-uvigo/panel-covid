@@ -262,7 +262,7 @@ class SymptomsData:
         self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
-        self.symptoms_df = self.db_read.read_data('clinic_description', {'type': 'symptom', 'date': dt(2020, 5, 29)},
+        self.symptoms_df = self.db_read.read_data('clinic_description', {'date': dt(2020, 5, 29)},
                                                   ['symptom', 'patients.total.percentage'])
 
     def move_data(self):
@@ -642,4 +642,10 @@ class DataAnalysisTaskGroup(TaskGroup):
     def move_symptoms_data():
         """Move the symptoms data from the extracted to the analyzed database"""
         data = SymptomsData()
+        data.move_data()
+
+    @staticmethod
+    def move_vaccination_data():
+        """Move the vaccination data from the extracted to the analyzed database"""
+        data = VaccinationData()
         data.move_data()

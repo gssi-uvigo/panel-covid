@@ -17,7 +17,7 @@ services:
     command: scheduler
     depends_on: 
       - airflow-backend
-      - airflow-database
+      - database
     networks: 
       - airflow
     volumes:
@@ -32,7 +32,7 @@ services:
     command: webserver
     depends_on: 
       - airflow-backend
-      - airflow-database
+      - database
     networks: 
       - airflow
     volumes:
@@ -44,29 +44,31 @@ services:
     env_file:
       - ./docker/mysql.env  
 
-  airflow-database:
+  database:
     build: ./docker/mongodb/
     ports:
       - "12345:27017"
     networks:
       - airflow
+      - api
     volumes:
-      - "airflow-database:/data/db"
+      - "database:/data/db"
     env_file:
       - ./docker/mongodb.env
 
-  airflow-api:
+  rest-api:
     build: "./docker/rest-api"
     ports:
       - "11223:80"
     networks:
-      - airflow
+      - api
     depends_on:
-      - airflow-database
+      - database
 
 networks:
   airflow:
+  api:
 volumes:
   airflow-backend:
   airflow-engine:
-  airflow-database:
+  database:

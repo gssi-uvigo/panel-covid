@@ -11,7 +11,7 @@ const port = 80;
 // Database connection parameters
 const username = "data_read"
 const password = "givemesomedata"
-const host = "localhost:12345"
+const host = "database"
 const auth_database = "covid_admin"
 const dbname = "covid_analyzed_data"
 const uri = `mongodb://${username}:${password}@${host}/${auth_database}`

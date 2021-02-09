@@ -57,7 +57,12 @@ class MongoDatabase:
             :param projection: (optional) List of columns to retrieve.
         """
         collection = self.db.get_collection(collection_name)
-        query = collection.find(filters, projection)
+        if projection:
+            projected_fields = {field: 1 for field in projection}
+        else:
+            projected_fields = None
+
+        query = collection.find(filters, projected_fields)
         df = pd.DataFrame(query)
         if '_id' in df.columns:
             df = df.drop(columns='_id')

@@ -15,6 +15,8 @@ La descarga y extracción de los datos está implementada con [Apache Airflow](h
 
 `docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run airflow-initializer`
 
+`cd docker/redash && npm install && npm run build`
+
 `docker-compose up`
 
 `docker exec -it covid-dashboard_airflow-scheduler_1 airflow users create --username admin --firstname`  *Tu nombre* `--lastname` *Tu apellido* `--role Admin --email` *Tu email*

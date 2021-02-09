@@ -44,7 +44,6 @@ Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará un
 - **[AEMET OpenData](https://opendata.aemet.es/centrodedescargas/inicio)**: API REST que ofrece datos diarios metereológicos de todo el país desde el 1 de marzo de 2020. El uso de la API requiere registro gratuito. *Información usada para buscar correlaciones entre la situación epidemiológica y meteorológica.*
 - **[Google Community Mobility Reports](https://www.google.com/covid19/mobility/)**: Datos anonimizados de movilidad de los usuarios de Google a nivel mundial desde el inicio de la pandemia. *Información usada para buscar correlaciones entre la movilidad de los ciudadanos y la evolución de la pandemia.*
 - **[INE (Instituto Nacional de Estadística)](http://ine.es)**:
-    - Prevalencia de enfermedades crónicas entre los ciudadanos españoles: [descargar en CSV](https://www.ine.es/jaxi/files/_px/es/csv_bdsc/t00/mujeres_hombres/tablas_1/l0/d03005.csv_bdsc)
     - Causas de muerte en España en 2018: [descargar en CSV](http://www.ine.es/jaxi/files/_px/es/csv_sc/t15/p417/a2018/01004.csv_sc)
     - Población por Comunidad Autónoma, desglosada en sexo y rango de edad: [descargar en CSV](https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/9683.csv)
 - **Creación propia**:
@@ -54,12 +53,12 @@ Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará un
 - *covid_extracted_data*:
     - **Datos COVID**:
         - `daily_data`: Casos, hospitalizaciones y fallecimientos diarios y totales por día, sexo, Comunidad Autónoma y rango de edad.
-        - `hospitals_pressure`: Presión hospitalaria por día y Comunidad Autónoma: número de pacientes ingresados, porcentaje de ocupación de camas, número de ingresos y número de altas.
+        - `hospitals_pressure`: Presión hospitalaria por día y Comunidad Autónoma: número de pacientes ingresados, porcentaje de ocupación de camas, número de ingresos y número de altas. Datos disponibles a partir del 19 de agosto de 2020.
         - `diagnostic_tests`: Número de pruebas diagnósticas realizadas por día, tasa por cada 100000 y positividad. Datos diarios por Comunidad Autónoma.
+        - `symptoms`: síntomas más habituales de los enfermos sintomáticos de COVID.
         - `transmission_indicators`: Porcentaje de casos asintomáticos, días hasta diagnóstico (mediana y rango intercuartil), contactos estrechos identificados por caso (mediana y rango intercuartil) y casos sin contacto estrecho conocido (número y porcentaje) por Comunidad Autónoma.
         - `outbreaks_description`: Número de brotes y casos acumulados por ámbito.
     - **Datos adicionales**:
-        - `death_causes`: Número de personas fallecidas en España en 2018 por causa, sexo y rango de edad.
         - `chronic_illnesses`: Porcentaje de población mayor de 15 años que en 2017 sufría una enfermedad crónica. Datos clasificados por sexo y enfermedad.
         - `google_mobility`: Porcentaje de variación de la movilidad de los ciudadanos respecto a la media por día, Comunidad Autónoma y tipo de desplazamiento.
         - `population_ar`: Población española por Comunidad Autónoma, sexo y rango de edad.
@@ -69,10 +68,17 @@ Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará un
     - `cases`: Casos nuevos y totales, por 100 000 habitantes, incidencia acumulada, media móvil, incremento diario, semanal y mensual... Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
     - `deaths`: Fallecimientos nuevos y totales, por 100 000 habitantes, media móvil, incremento diario, semanal y mensual y tasa de mortalidad (últimas 2 semanas y total). Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
     - `hospitalizations`: Hospitalizaciones nuevas y totales, por 100 000 habitantes, media móvil, incremento diario, semanal y mensual y tasa de hospitalización (últimas 2 semanas y total). Datos para UCI y total. Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
-    - `death_causes`: Número de personas fallecidas en España en 2018 por cada una de las 10 causas de muerte más letales en España, junto con el número de personas fallecidas de COVID-19 en 2020.
+    - `top_death_causes`: Número de personas fallecidas en España en 2018 por cada una de las 10 causas de muerte más letales en España, junto con el número de personas fallecidas de COVID-19 en un año (aproximación anual).
+    - `covid_vs_all_deaths`: Porcentaje de personas que fallecieron por COVID en un año natural por rango de edad y sexo.
+    - `diagnostic_tests`: Número de pruebas diagnósticas realizadas, tasa por cada 100000 y positividad diarias, así como tests totales, positividad media y número de tests totales por cada 100 000 habitantes acumulados hasta la fecha. Datos diarios por Comunidad Autónoma.
+    - `vaccination`: Datos diarios de vacunación por Comunidad Autónoma: número de dosis recibidas, número y porcentaje de dosis aplicadas y número de personas completamente vacunadas.
+    - `symptoms`: Síntomas más habituales y porcentaje entre las personas sintomáticas.
+    - `hospitals_pressure`: Presión hospitalaria por día y Comunidad Autónoma: número de pacientes ingresados y porcentaje de ocupación de camas, tanto en total como en UCI. Datos disponibles a partir del 19 de agosto de 2020.
+    - `outbreaks_description`: Número de brotes y casos acumulados por ámbito.
+    - `transmission_indicators`: Porcentaje de casos asintomáticos, mediana de contactos estrechos identificados por caso y mediana de casos sin contacto estrecho conocido. Datos por Comunidad Autónoma y fecha (frecuencia aproximadamente semanal).
 
 
-## Librerías utilizadas
+## Librerías utilizadas en Python
 - [PyPDF2](https://pypi.org/project/PyPDF2/): extracción de datos de los ficheros PDF.
 - [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/): obtención de las URLs de los informes PDFs de la RENAVE desde su página web.
 - [Pandas](https://pypi.org/project/pandas/): análisis y transformación de los datos extraídos.

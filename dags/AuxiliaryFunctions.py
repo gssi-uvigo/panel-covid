@@ -245,11 +245,14 @@ class PDFReport:
         replaced_page = page.replace('Castilla La Mancha', 'Castilla_La_Mancha') \
             .replace('Castilla-La Mancha', 'Castilla_La_Mancha') \
             .replace('C. Valenciana', 'Comunidad_Valenciana') \
+            .replace('C Valenciana', 'Comunidad_Valenciana') \
             .replace('País Vasco', 'País_Vasco') \
             .replace('Castilla y León', 'Castilla_y_León') \
             .replace('La Rioja', 'La_Rioja') \
             .replace('Total general', 'ESPAÑA') \
-            .replace('Total', 'ESPAÑA')
+            .replace('Total', 'ESPAÑA') \
+            .replace('Islas Baleares', 'Baleares') \
+            .replace('Islas Canarias', 'Canarias')
 
         if table_number:
             # The "Tabla X" expression is used later for trimming the table data in the text array

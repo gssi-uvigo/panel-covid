@@ -256,6 +256,11 @@ class VaccinationData:
 class SymptomsData:
     """Most common symptoms"""
 
+    spanish_translation = {'aki': 'Infección aguda de riñón', 'dhiarrea': 'Diarrea',
+                           'other_respiratory': 'Otras afecciones respiratorias', 'vomit': 'Vómitos',
+                           'dyspnoea': 'Disnea', 'fever': 'Fiebre', 'ards': 'Síndrome de dificultad respiratoria aguda',
+                           'cough': 'Tos', 'sore_throat': 'Dolor de garganta'}
+
     def __init__(self):
         """Load the dataset"""
         # Connection to the extracted data database for reading, and to the analyzed data for writing
@@ -271,13 +276,16 @@ class SymptomsData:
         self.__store_data__()
 
     def __transform_data__(self):
-        """Get only the total percentage"""
+        """Get only the total percentage and translate the symptoms to Spanish"""
         self.symptoms_df['percentage'] = self.symptoms_df['patients'].apply(lambda x: x['total']['percentage'])
         self.symptoms_df = self.symptoms_df.drop(columns='patients')
 
+        # Translate the symptoms to Spanish
+        self.symptoms_df['symptom'] = self.symptoms_df['symptom'].replace(SymptomsData.spanish_translation)
+
     def __store_data__(self):
         """Store the processed data in the database"""
-        self.db_write.store_data('symptoms', self.symptoms_df)
+        self.db_write.store_data('symptoms', self.symptoms_df.to_dict('records'))
 
 
 class DeathCauses:
@@ -587,6 +595,11 @@ class DataAnalysisTaskGroup(TaskGroup):
 
         PythonOperator(task_id='move_symptoms',
                        python_callable=DataAnalysisTaskGroup.move_symptoms_data,
+                       task_group=self,
+                       dag=dag)
+
+        PythonOperator(task_id='move_vaccination',
+                       python_callable=DataAnalysisTaskGroup.move_vaccination_data,
                        task_group=self,
                        dag=dag)
 

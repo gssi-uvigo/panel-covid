@@ -70,6 +70,8 @@ class VaccinationReportsTaskGroup(TaskGroup):
     @staticmethod
     def store_vaccination_reports():
         """Store in the database the downloaded reports"""
+        vaccination_data = []
+
         for file in os.listdir(VaccinationReportsTaskGroup.reports_folder):
             # Read the report as a DataFrame
             df = pd.read_excel(VaccinationReportsTaskGroup.reports_folder + '/' + file)
@@ -113,6 +115,8 @@ class VaccinationReportsTaskGroup(TaskGroup):
 
                         transformed_record[key][subkey] = v
 
-            # Store the data in MongoDB
-            database = MongoDatabase(MongoDatabase.extracted_db_name)
-            database.store_data("vaccination", mongo_data)
+            vaccination_data.extend(mongo_data)
+
+        # Store the data in MongoDB
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
+        database.store_data("vaccination", vaccination_data)

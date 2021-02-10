@@ -3,7 +3,7 @@
 """
 import pandas as pd
 import numpy as np
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta as td
 
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
@@ -300,15 +300,37 @@ class DeathCauses:
 
     def __init__(self):
         """Load the datasets"""
-        # Connection to the extracted data database for reading, and to the analyzed data for writing
+        # Connection to the extracted data database for reading, and to the analyzed data for writing, as well as
+        # for reading the aggregated deaths
         self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
-        # Load the death causes and COVID deaths datasets
+        # Load the death causes
         self.death_causes_df = self.db_read.read_data('death_causes')
-        self.deaths_df = self.db_write.read_data('deaths', {'autonomous_region': 'España',
-                                                            'date': dt(2021, 1, 20)},
-                                                 ['age_range', 'total_deaths', 'gender'])
+
+        # Load the COVID deaths until now. If it hasn't been yet a year since 15th March 2020, get the deaths until
+        # today and calculate the proportional number to 365 days. If it's been more than one year,
+        # get the number of deaths of the last 365 days.
+        today = dt.today() - td(
+            days=7)  # the today deaths data might not be available yet, so we'll use the data from one week ago
+        today = dt(today.year, today.month, today.day)  # remove the time from the today datetime object
+
+        if today - dt(2020, 3, 15) >= td(days=365):
+            # Get the number of deaths of the last 365 days
+            deaths_one_year_ago_df = self.db_write.read_data('deaths', {'autonomous_region': 'España', 'date':
+                today - td(days=365)}, ['age_range', 'total_deaths', 'gender'])
+            deaths_today_df = self.db_write.read_data('deaths', {'autonomous_region': 'España', 'date': today},
+                                                      ['age_range', 'total_deaths', 'gender'])
+            self.covid_deaths_df = deaths_today_df
+            self.covid_deaths_df['total_deaths'] = \
+                self.covid_deaths_df['total_deaths'] - deaths_one_year_ago_df['total_deaths']
+        else:
+            # Get the number of deaths until today, and calculate the remaining proportion to complete a year
+            deaths_today_df = self.db_write.read_data('deaths', {'autonomous_region': 'España', 'date': today},
+                                                      ['age_range', 'total_deaths', 'gender'])
+            proportion = 365 / (today - dt(2020, 3, 15)).days
+            self.covid_deaths_df = deaths_today_df
+            self.covid_deaths_df['total_deaths'] = self.covid_deaths_df['total_deaths'] * proportion
 
     def process_and_store_data(self):
         """Analyze the data, calculate some new variables, and store the results to the database"""
@@ -327,8 +349,8 @@ class DeathCauses:
         death_causes_df = self.death_causes_df[self.death_causes_df['death_cause'] != 'Todas las causas']
 
         # Group the 2018 death causes with the COVID-19 deaths
-        self.deaths_df['death_cause'] = 'COVID-19'
-        death_causes_total = pd.concat([self.deaths_df, death_causes_df])
+        self.covid_deaths_df['death_cause'] = 'COVID-19'
+        death_causes_total = pd.concat([self.covid_deaths_df, death_causes_df])
 
         # Get the top 10 death causes for each age range and gender
         death_causes_top_10 = death_causes_total.sort_values(['age_range', 'total_deaths', 'gender'],
@@ -337,7 +359,7 @@ class DeathCauses:
         self.death_causes_top_10 = death_causes_top_10
 
         # Calculate the percentage of deaths produced by COVID
-        covid_vs_all_deaths = pd.merge(self.deaths_df, all_causes_sum_df, on=['age_range', 'gender']).rename(
+        covid_vs_all_deaths = pd.merge(self.covid_deaths_df, all_causes_sum_df, on=['age_range', 'gender']).rename(
             columns={'total_deaths_x': 'covid_deaths', 'total_deaths_y': 'other_deaths'}).drop(
             columns=['death_cause_y', 'death_cause_x'])
         covid_vs_all_deaths['covid_percentage'] = 100 * covid_vs_all_deaths['covid_deaths'] / (

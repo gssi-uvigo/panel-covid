@@ -394,14 +394,19 @@ class PopulationPyramidVariation:
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
         # Load the data
-        self.covid_deaths_df = self.db_write.read_data('covid_vs_all_deaths', None, ['gender', 'age_range', 'covid_deaths'])
+        self.covid_deaths_df = self.db_write.read_data('covid_vs_all_deaths', None,
+                                                       ['gender', 'age_range', 'covid_deaths'])
         self.population_df = self.db_read.read_data('population_ar', {'autonomous_region': 'España'},
-                                               ['age_range', 'M', 'F', 'total'])
+                                                    ['age_range', 'M', 'F', 'total'])
+
+    def process_and_store_data(self):
+        self.__transform_data__()
+        self.__store_data__()
 
     def __transform_data__(self):
         """Create the table with the joined data from both DataFrames"""
         # Replace the age range in the population DataFrame
-        self.population_df['age_range'] = self.population_df['age_range'].\
+        self.population_df['age_range'] = self.population_df['age_range']. \
             replace(PopulationPyramidVariation.age_range_translations)
         self.population_df = self.population_df.groupby('age_range').sum().reset_index()
 
@@ -638,7 +643,13 @@ class DataAnalysisTaskGroup(TaskGroup):
                                                  task_group=self,
                                                  dag=dag)
 
-        analyze_deaths_data_op >> analyze_death_causes_op
+        analyze_pyramid_variation_op = PythonOperator(task_id='analyze_population_pyramid_variation',
+                                                      python_callable=DataAnalysisTaskGroup.
+                                                      analyze_population_pyramid_variation,
+                                                      task_group=self,
+                                                      dag=dag)
+
+        analyze_deaths_data_op >> analyze_death_causes_op >> analyze_pyramid_variation_op
 
         PythonOperator(task_id='move_outbreaks_description',
                        python_callable=DataAnalysisTaskGroup.move_outbreaks_description,
@@ -692,6 +703,12 @@ class DataAnalysisTaskGroup(TaskGroup):
     def analyze_death_causes():
         """Extract the top 10 death causes and compare them with COVID-19"""
         data = DeathCauses()
+        data.process_and_store_data()
+
+    @staticmethod
+    def analyze_population_pyramid_variation():
+        """Analyze the variation of the population pyramid due to COVID"""
+        data = PopulationPyramidVariation()
         data.process_and_store_data()
 
     @staticmethod

@@ -13,9 +13,7 @@ La descarga y extracción de los datos está implementada con [Apache Airflow](h
 
 `docker-compose build`
 
-`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run airflow-initializer`
-
-`cd docker/redash && npm install && npm run build`
+`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run`
 
 `docker-compose up`
 

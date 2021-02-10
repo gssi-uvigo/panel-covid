@@ -11,3 +11,9 @@ services:
       - ./airflow:/opt/airflow/
     env_file:
       - ./docker/mysql.env
+
+  redash-initializer:
+    image: node:latest
+    command: cd redash && npm install && npm run build
+    volumes:
+      - ./redash:/redash

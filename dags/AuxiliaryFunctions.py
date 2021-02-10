@@ -60,12 +60,12 @@ class MongoDatabase:
         if projection:
             projected_fields = {field: 1 for field in projection}
         else:
-            projected_fields = None
+            projected_fields = {}
+
+        projected_fields['_id'] = 0
 
         query = collection.find(filters, projected_fields)
         df = pd.DataFrame(query)
-        if '_id' in df.columns:
-            df = df.drop(columns='_id')
 
         return df
 

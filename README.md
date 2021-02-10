@@ -24,6 +24,11 @@ La descarga y extracción de los datos está implementada con [Apache Airflow](h
 
 Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará una vez por día el workflow de descarga, extracción y análisis de los datos.
 
+Para evitar sobrecargar el sistema, es recomendable ejecutar por separado los contenedores de Airflow para descargar, extraer y analizar la información, y posteriormente los de Redash para visualizarla. A partir de la versión 1.28 de Docker Compose, se incluye la opción de crear perfiles, lo que permitiría diferenciar entre los contenedores necesarios para la descarga, extracción y análisis, para la API REST y para el dashboard. Tan pronto pueda disponer de esta versión de Docker Compose, implementaré esta funcionalidad.
+
+## API REST
+La información analizada almacenada en la base de datos es accesible a través de una API REST, desplegada mediante un servidor en el puerto 11223. Para más información sobre esta API, consultar la documentación en el fichero `covid-api.yaml`.
+
 ## Estructura de archivos:
 - `docker-compose.yml`: define los contenedores Docker que conforman este proyecto.
 - `covid_data`: carpeta en la que se descargarán todos los datos. Mapeada con los contenedores de Airflow.
@@ -70,6 +75,7 @@ Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará un
     - `hospitalizations`: Hospitalizaciones nuevas y totales, por 100 000 habitantes, media móvil, incremento diario, semanal y mensual y tasa de hospitalización (últimas 2 semanas y total). Datos para UCI y total. Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
     - `top_death_causes`: Número de personas fallecidas en España en 2018 por cada una de las 10 causas de muerte más letales en España, junto con el número de personas fallecidas de COVID-19 en un año (aproximación anual).
     - `covid_vs_all_deaths`: Porcentaje de personas que fallecieron por COVID en un año natural por rango de edad y sexo.
+    - `population_pyramid_variation`: Variación de la pirámide poblacional tras los fallecimientos por COVID.
     - `diagnostic_tests`: Número de pruebas diagnósticas realizadas, tasa por cada 100000 y positividad diarias, así como tests totales, positividad media y número de tests totales por cada 100 000 habitantes acumulados hasta la fecha. Datos diarios por Comunidad Autónoma.
     - `vaccination`: Datos diarios de vacunación por Comunidad Autónoma: número de dosis recibidas, número y porcentaje de dosis aplicadas y número de personas completamente vacunadas.
     - `symptoms`: Síntomas más habituales y porcentaje entre las personas sintomáticas.

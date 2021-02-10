@@ -540,6 +540,24 @@ components:
           type: number
           example: 64.1
 
+    PopulationPyramidVariation:
+      title: Variación de la pirámide poblacional
+      description: Población que ha fallecido y que ha sobrevivido a día de hoy a la pandemia, por sexo y rango de edad
+      type: object
+      properties:
+        age_range:
+          $ref: '#/components/schemas/AgeRange'
+        gender:
+          $ref: '#/components/schemas/Gender'
+        alive_population:
+          title: Número de personas vivas en España
+          type: integer
+          example: 47100201
+        covid_deaths:
+          title: Número de personas muertas de COVID en España
+          type: integer
+          example: 55102
+
 
 paths:    
   /:
@@ -864,3 +882,21 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Vaccination'
+
+  /population_pyramid_variation:
+    get:
+      summary: Variación de la pirámide poblacional
+      description: Población que ha fallecido y que ha sobrevivido a día de hoy a la pandemia, por sexo y rango de edad
+      parameters:
+        - $ref: '#/components/parameters/age_range'
+        - $ref: '#/components/parameters/gender'
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PopulationPyramidVariation'

@@ -1,4 +1,4 @@
-const endpoints_list = ['/', '/cases', '/deaths', '/hospitalizations', '/hospitals_pressure', '/diagnostic_tests', '/covid_vs_all_deaths', '/outbreaks_description', '/top_death_causes', '/transmission_indicators']
+const endpoints_list = ['/', '/cases', '/deaths', '/hospitalizations', '/hospitals_pressure', '/diagnostic_tests', '/covid_vs_all_deaths', '/outbreaks_description', '/top_death_causes', '/transmission_indicators', '/vaccination', '/population_pyramid_variation']
 
 /**
  * Log a request datetime, client IP, method, endpoint and response status code in the console.
@@ -290,6 +290,24 @@ const router = (app, db) => {
         // Query the database for the percentage of deaths caused by COVID
         const query = db.collection('vaccination').find(filters).project(projection)
         limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+
+    /** 
+     * GET /population_pyramid_variation
+     * Return the population pyramid variation.
+    */
+    app.get('/population_pyramid_variation', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['gender', 'age_range'])
+
+        // Query the database for the percentage of deaths caused by COVID
+        const query = db.collection('vaccination').find(filters).toArray(function (err, result) {
             if (err) response.sendStatus(500);
             response.send(result);
         });

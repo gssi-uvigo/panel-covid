@@ -291,12 +291,12 @@ class SymptomsData:
 class DeathCauses:
     """Death causes in Spain"""
 
-    age_range_translations = {'0-1': '0-9', '1-4': '0-9', '5-9': '0-9', '10-14': '10-19', '15-19': '10-19',
-                              '20-24': '20-29',
+    age_range_translations = {'0-1': '0-9', '0-4': '0-9', '1-4': '0-9', '5-9': '0-9', '10-14': '10-19',
+                              '15-19': '10-19', '20-24': '20-29',
                               '25-29': '20-29', '30-34': '30-39', '35-39': '30-39', '40-44': '40-49',
                               '45-49': '40-49', '50-54': '50-59', '55-59': '50-59', '60-64': '60-69',
                               '65-69': '60-69', '70-74': '70-79', '75-79': '70-79', '80-84': '80+', '85-89': '80+',
-                              '90-94': '80+', '95+': '80+', 'Total': 'total'}
+                              '90-94': '80+', '95+': '80+', '≥90': '80+', 'Total': 'total'}
 
     def __init__(self):
         """Load the datasets"""
@@ -375,6 +375,51 @@ class DeathCauses:
         mongo_data_covid_vs_all_deaths = self.covid_vs_all_deaths.to_dict('records')
         collection = 'covid_vs_all_deaths'
         self.db_write.store_data(collection, mongo_data_covid_vs_all_deaths)
+
+
+class PopulationPyramidVariation:
+    """Create a table with the population pyramid variation suffered due to COVID"""
+    age_range_translations = {'0-1': '0-9', '0-4': '0-9', '1-4': '0-9', '5-9': '0-9', '10-14': '10-19',
+                              '15-19': '10-19', '20-24': '20-29',
+                              '25-29': '20-29', '30-34': '30-39', '35-39': '30-39', '40-44': '40-49',
+                              '45-49': '40-49', '50-54': '50-59', '55-59': '50-59', '60-64': '60-69',
+                              '65-69': '60-69', '70-74': '70-79', '75-79': '70-79', '80-84': '80+', '85-89': '80+',
+                              '90-94': '80+', '95+': '80+', '≥90': '80+', 'Total': 'total'}
+
+    def __init__(self):
+        """Load the datasets"""
+        # Connection to the extracted data database for reading the population data, and to the analyzed data for
+        # writing, as well as for reading the aggregated deaths
+        self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
+        self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
+
+        # Load the data
+        self.covid_deaths_df = self.db_write.read_data('covid_vs_all_deaths', None, ['gender', 'age_range', 'covid_deaths'])
+        self.population_df = self.db_read.read_data('population_ar', {'autonomous_region': 'España'},
+                                               ['age_range', 'M', 'F', 'total'])
+
+    def __transform_data__(self):
+        """Create the table with the joined data from both DataFrames"""
+        # Replace the age range in the population DataFrame
+        self.population_df['age_range'] = self.population_df['age_range'].\
+            replace(PopulationPyramidVariation.age_range_translations)
+        self.population_df = self.population_df.groupby('age_range').sum().reset_index()
+
+        # Melt the gender columns in the population DataFrame
+        self.population_df = self.population_df.melt(id_vars='age_range', var_name='gender')
+
+        # Group horizontally the two DataFrames together
+        self.population_pyramid_covid_df = \
+            pd.merge(self.population_df, self.covid_deaths_df,
+                     on=['age_range', 'gender']).rename(columns={'value': 'alive_population'})
+        self.population_pyramid_covid_df['alive_population'] = \
+            self.population_pyramid_covid_df['alive_population'] - self.population_pyramid_covid_df['covid_deaths']
+
+    def __store_data__(self):
+        """Store the data in the database"""
+        mongo_data = self.population_pyramid_covid_df.to_dict('records')
+        collection = 'population_pyramid_variation'
+        self.db_write.store_data(collection, mongo_data)
 
 
 class DiagnosticTests:

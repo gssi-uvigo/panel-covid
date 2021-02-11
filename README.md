@@ -30,6 +30,10 @@ Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará un
 
 Para evitar sobrecargar el sistema, es recomendable ejecutar por separado los contenedores de Airflow para descargar, extraer y analizar la información, y posteriormente los de Redash para visualizarla. A partir de la versión 1.28 de Docker Compose, se incluye la opción de crear perfiles, lo que permitiría diferenciar entre los contenedores necesarios para la descarga, extracción y análisis, para la API REST y para el dashboard. Tan pronto pueda disponer de esta versión de Docker Compose, implementaré esta funcionalidad.
 
+- Despliegue de Airflow (descarga, extracción y análisis de los datos): `docker-compose up airflow-scheduler airflow-webserver`
+- Despliegue de API REST (consulta de los datos procesados y analizados): `docker-compose up rest-api`
+- Despliegue de Redash (visualización de los datos): `docker-compose up redash-scheduler redash-worker`
+
 ## API REST
 La información analizada almacenada en la base de datos es accesible a través de una API REST, desplegada mediante un servidor en el puerto 11223. Para más información sobre esta API, consultar la documentación en el fichero `covid-api.yaml`.
 

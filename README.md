@@ -41,13 +41,12 @@ La información analizada almacenada en la base de datos es accesible a través 
         - **Pruebas diagnósticas realizadas**: número de pruebas realizadas por día, tasa por cada 100000 y positividad por Comunidad Autónoma. *Número de pruebas realizadas disponible a partir del informe 189 (20/08/2020), y el resto de datos a partir del 204 (10/09/2020).*.
         - **Origen de los brotes**: número de brotes y casos acumulados por ámbito. *Disponible de forma esporádica en algunos informes: 230, 235, 240...*
         - **Presión hospitalaria**: datos diarios por Comunidad Autónoma del número de pacientes COVID hospitalizados, porcentaje de ocupación de camas UCI y totales por casos COVID, número de ingresos y número de altas. *Datos disponibles a partir del informe 189 (20/08/2020).*
+    - Informes diarios de vacunación en formato ODS. *[Ejemplo del día 10 de febrero de 2021](https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/Informe_Comunicacion_20210210.ods)*.
 - **[RENAVE](https://www.isciii.es/QueHacemos/Servicios/VigilanciaSaludPublicaRENAVE/EnfermedadesTransmisibles/Paginas/InformesCOVID-19.aspx)**:
     - [casos_hosp_uci_def_sexo_edad_provres.csv](https://cnecovid.isciii.es/covid19/resources/casos_hosp_uci_def_sexo_edad_provres.csv): CSV actualizado diariamente con el número de casos, hospitalizaciones, ingresos en UCI y fallecimientos diarios, agrupados por sexo, rango de edad y provincia.
     - Informe PDF de evolución epidemiológica, publicado semanalmente. *[Ejemplo del día 29 de diciembre de 2020](https://www.isciii.es/QueHacemos/Servicios/VigilanciaSaludPublicaRENAVE/EnfermedadesTransmisibles/Documents/INFORMES/Informes%20COVID-19/Informe%20COVID-19.%20Nº%2059_29%20de%20diciembre%20de%202020.pdf)*:
         - **Descripción clínica de los casos**: enfermedades previas y síntomas presentados. *Tabla 2, disponible desde el informe 12 (20/03/2020) hasta el 33 (29/05/2020).*
         - **Indicadores de transmisión**: porcentaje de casos asintomáticos, días hasta diagnóstico (mediana y rango intercuartil), contactos estrechos identificados por caso (mediana y rango intercuartil) y casos sin contacto estrecho conocido (número y porcentaje) por Comunidad Autónoma. *Tabla 6, disponible a partir del informe 34 (15/07/2020).*
-- **[AEMET OpenData](https://opendata.aemet.es/centrodedescargas/inicio)**: API REST que ofrece datos diarios metereológicos de todo el país desde el 1 de marzo de 2020. El uso de la API requiere registro gratuito. *Información usada para buscar correlaciones entre la situación epidemiológica y meteorológica.*
-- **[Google Community Mobility Reports](https://www.google.com/covid19/mobility/)**: Datos anonimizados de movilidad de los usuarios de Google a nivel mundial desde el inicio de la pandemia. *Información usada para buscar correlaciones entre la movilidad de los ciudadanos y la evolución de la pandemia.*
 - **[INE (Instituto Nacional de Estadística)](http://ine.es)**:
     - Causas de muerte en España en 2018: [descargar en CSV](http://www.ine.es/jaxi/files/_px/es/csv_sc/t15/p417/a2018/01004.csv_sc)
     - Población por Comunidad Autónoma, desglosada en sexo y rango de edad: [descargar en CSV](https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/9683.csv)
@@ -64,10 +63,7 @@ La información analizada almacenada en la base de datos es accesible a través 
         - `transmission_indicators`: Porcentaje de casos asintomáticos, días hasta diagnóstico (mediana y rango intercuartil), contactos estrechos identificados por caso (mediana y rango intercuartil) y casos sin contacto estrecho conocido (número y porcentaje) por Comunidad Autónoma.
         - `outbreaks_description`: Número de brotes y casos acumulados por ámbito.
     - **Datos adicionales**:
-        - `chronic_illnesses`: Porcentaje de población mayor de 15 años que en 2017 sufría una enfermedad crónica. Datos clasificados por sexo y enfermedad.
-        - `google_mobility`: Porcentaje de variación de la movilidad de los ciudadanos respecto a la media por día, Comunidad Autónoma y tipo de desplazamiento.
         - `population_ar`: Población española por Comunidad Autónoma, sexo y rango de edad.
-        - `weather_ar`: Temperatura, precipitaciones y luz solar diarios por Comunidad Autónoma.+
 
 - *covid_analyzed_data*: *mongodb://data_read:givemesomedata@localhost:12345/covid_admin*
     - `cases`: Casos nuevos y totales, por 100 000 habitantes, incidencia acumulada, media móvil, incremento diario, semanal y mensual... Datos clasificados por Comunidad Autónoma, sexo y rango de edad.

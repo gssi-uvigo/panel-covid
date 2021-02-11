@@ -2,19 +2,12 @@
     Download some CSV and JSON datasets and store them in the database:
         - COVID-19 situation by RENAVE CSV
         - Death causes CSV
-        - Chronic illnesses CSV
         - Population per Autonomous Region CSV
         - Provinces per Autonomous Regions CSV
-        - Weather data by AEMET (REST API)
 """
-import json
-import os
-import requests
 import pandas as pd
-import numpy as np
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
-from datetime import datetime as dt, timedelta as td
 
 from AuxiliaryFunctions import download_csv_file, CSVDataset, MongoDatabase
 
@@ -113,42 +106,6 @@ class ARPopulationCSVDataset(CSVDataset):
         self.mongo_data = population_ar_mongo
 
 
-class AEMETWeatherDataset:
-    """Represents a JSON dataset containing the weather for each day of the year in every weather station in Spain"""
-
-    def __init__(self, weather_dataset, provinces_dataset):
-        """
-        Create a table with the average weather by Autonomous Region for each day of the year.
-        :param weather_dataset: JSON file provided by AEMET
-        :param provinces_dataset: CSV with the names of the Spanish provinces and the Autonomous Region they belong to.
-        """
-
-        # Load the weather and the provinces datasets
-        weather_provinces = pd.read_json(weather_dataset)  # read the JSON with the weather data
-        provinces_ar = pd.read_csv(provinces_dataset)  # read the CSV with the autonomous region for each province
-
-        # Replace the province by the autonomous region
-        weather_ar = pd.merge(weather_provinces, provinces_ar, on='provincia', how='left')
-
-        # Rename the columns
-        weather_ar = weather_ar[['fecha', 'comunidad autónoma', 'tmed', 'prec', 'sol']]
-        weather_ar.rename(columns={'fecha': 'date', 'comunidad autónoma': 'autonomous_region', 'tmed': 'temperature',
-                                   'prec': 'precipitations', 'sol': 'sunlight'}, inplace=True)
-
-        # Column data types
-        weather_ar.replace([np.nan, 'Ip', 'Acum'], "0.0", inplace=True)
-        weather_ar[['precipitations', 'temperature', 'sunlight']] = weather_ar[
-            ['precipitations', 'temperature', 'sunlight']].astype("float64")
-        weather_ar['date'] = pd.to_datetime(weather_ar['date'])  # parse the date column
-
-        # Calculate the average temperature for each autonomous region
-        self.weather_ar = weather_ar.groupby(['autonomous_region', 'date'], as_index=False).mean()
-
-    def store_dataset(self, database, collection_name):
-        """Store the transformed data in the database"""
-        database.store_data(collection_name, self.weather_ar.to_dict('records'))
-
-
 class DeathCausesDataset(CSVDataset):
     """Represent a dataset containing all the death causes in Spain in 2018"""
 
@@ -213,16 +170,6 @@ class CSVDatasetsTaskGroup(TaskGroup):
                                                   task_group=self,
                                                   dag=dag)
 
-        download_aemet_data_op = PythonOperator(task_id='download_aemet_data',
-                                                python_callable=CSVDatasetsTaskGroup.download_aemet_data,
-                                                task_group=self,
-                                                dag=dag)
-
-        store_aemet_data_op = PythonOperator(task_id='store_aemet_data',
-                                             python_callable=CSVDatasetsTaskGroup.process_and_store_aemet_data,
-                                             task_group=self,
-                                             dag=dag)
-
         store_daily_data_op = PythonOperator(task_id='store_daily_data',
                                              python_callable=CSVDatasetsTaskGroup.process_and_store_cases_and_deaths,
                                              task_group=self,
@@ -238,7 +185,6 @@ class CSVDatasetsTaskGroup(TaskGroup):
                                                 task_group=self,
                                                 dag=dag)
 
-        [download_aemet_data_op, download_population_provinces_op] >> store_aemet_data_op
         download_death_causes_op >> store_death_causes_op
         download_daily_data_op >> store_daily_data_op
         download_population_provinces_op >> store_ar_population_op
@@ -262,80 +208,7 @@ class CSVDatasetsTaskGroup(TaskGroup):
     @staticmethod
     def download_death_causes():
         """Download the dataset with the death causes in Spain in 2018"""
-        download_csv_file('https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/6609.csv',
-                          'death_causes.csv',
-                          False)
-
-    @staticmethod
-    def download_aemet_data():
-        """
-            To get the AEMET weather data, multiple calls to the AEMET REST API have to be made, in 30-days time
-            windows, hence the download and store process requires some more steps than with the other datasets.
-        """
-        # Base URL, endpoint URL and API key definition
-        aemet_base_url = 'https://opendata.aemet.es/opendata'
-        aemet_weather_endpoint = '/api/valores/climatologicos/diarios/datos/fechaini/{fechaIniStr}/fechafin/{' \
-                                 'fechaFinStr}/todasestaciones'
-        aemet_api_key = 'eyJhbGciOiJIUzI1NiJ9' \
-                        '.eyJzdWIiOiJndWlsbGVybW8uYmFycmVpcm9AZGV0LnV2aWdvLmVzIiwianRpIjoiOTYwNjA3NGQtNjBmYy00MWE4LThl'\
-                        'MzQtMGNiY2MzODkzYmRiIiwiaXNzIjoiQUVNRVQiLCJpYXQiOjE2MDY4MzY1NjcsInVzZXJJZCI6Ijk2MDYwNzRkLTYwZ'\
-                        'mMtNDFhOC04ZTM0LTBjYmNjMzg5M2JkYiIsInJvbGUiOiIifQ.JyL4G-tCZZIWRsJp5HBOMNdkPWE1rTS3vTkBu2CdI6c'
-
-        # The data will be returned in JSON format
-        headers = {'Content-Type': 'application/json', 'api_key': aemet_api_key}
-
-        # The API endpoint only allows requests in a time window of 30 days, that's why the data will be obtained
-        # iteratively
-        file_path = 'csv_data/weather.json'
-        data = []
-        now = dt.now()
-        aemet_date_format = '%Y-%m-%dT%H:%M:%SUTC'
-
-        # If there is already a JSON with some data, just request the data from its last update date
-        if os.path.exists(file_path):
-            # Get the last date
-            with open(file_path, 'r', encoding='latin-1') as f:
-                json_dataset = json.load(f)
-                from_date = dt.fromisoformat(json_dataset[-1]['fecha']) + td(days=1)
-        else:
-            # Start from the 1st March 2020 (beginning of the pandemic in Spain)
-            from_date = dt(2020, 3, 1)
-
-        while (now - from_date).days > 0:
-            # Get the weather data for the next 30 days
-            number_of_days = min((now - from_date).days, 30)
-            until_date = from_date + td(days=number_of_days)
-            from_string = from_date.strftime(aemet_date_format)
-            until_string = until_date.strftime(aemet_date_format)
-            print(f'{from_string} - {until_string}')
-
-            first_request = requests.get(
-                aemet_base_url + aemet_weather_endpoint.format(fechaIniStr=from_string, fechaFinStr=until_string),
-                headers=headers)
-            if first_request.json()['estado'] < 404:
-                # The API response body contains a link to the actual content
-                second_request_url = first_request.json()['datos']
-                second_request = requests.get(second_request_url, headers=headers)
-                if second_request.status_code < 400:
-                    # Append the response to the previous responses
-                    data.extend(second_request.json())
-
-            from_date = until_date + td(days=1)
-
-        # Replace the comma decimal separator by a point (for later processing the data with Pandas)
-        for item in data:
-            for key in item:
-                item[key] = item[key].replace(',', '.')
-
-        # Store all the data in a JSON file
-        if os.path.exists(file_path):
-            with open(file_path, 'r') as original_file:
-                original_json = json.load(original_file)
-                original_json.extend(data)
-                data = original_json
-
-        with open(file_path, 'w') as new_file:
-            new_file.write(json.dumps(data))
+        download_csv_file('https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/6609.csv', 'death_causes.csv', False)
 
     # endregion
 
@@ -352,12 +225,6 @@ class CSVDatasetsTaskGroup(TaskGroup):
         dataset = ARPopulationCSVDataset("csv_data/population_ar.csv", separator=';', decimal=',', thousands='.')
         database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'population_ar')
-
-    @staticmethod
-    def process_and_store_aemet_data():
-        dataset = AEMETWeatherDataset('csv_data/weather.json', 'csv_data/provinces_ar.csv')
-        database = MongoDatabase(MongoDatabase.extracted_db_name)
-        dataset.store_dataset(database, 'weather')
 
     @staticmethod
     def process_and_store_death_causes():

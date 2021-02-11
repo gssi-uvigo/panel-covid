@@ -1,11 +1,15 @@
 # Dashboard COVID-19 España
-*Guillermo Barreiro Fernández*
+*[Grupo de Investigación en Servicios para la Sociedad de la Información (GSSI)](http://gssi.det.uvigo.es)*
 
-*atlanTTic, Universidade de Vigo*
+*[Centro de Investigación en Tecnologías de Telecomunicación – atlanTTic](https://atlanttic.uvigo.es)*
+
+*[Universidad de Vigo](https://uvigo.gal)*
 
 Este proyecto pretende recopilar toda la información disponible públicamente sobre la evolución de la pandemia del COVID-19 en España, con el fin de poder analizarla y mostrar los resultados al público, de manera objetiva, sencilla y visualmente atractiva.
 
-La descarga y extracción de los datos está implementada con [Apache Airflow](https://airflow.apache.org), los cuales se almacenan para su posterior análisis y visualización en una base de datos [MongoDB](https://mongodb.com). Posteriormente, usando también Apache Airflow, se procede al análisis de los datos almacenados, cuyos resultados se almacenan en otra base de datos, también dentro del mismo servidor MongoDB. El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.com), automatizando la orquestación de los contenedores con [Docker Compose](https://docs.docker.com/compose/).
+La descarga y extracción de los datos está implementada con [Apache Airflow](https://airflow.apache.org), los cuales se almacenan para su posterior análisis y visualización en una base de datos [MongoDB](https://mongodb.com). Posteriormente, usando también Apache Airflow, se procede al análisis de los datos almacenados, cuyos resultados se almacenan en otra base de datos, también dentro del mismo servidor MongoDB. Estos datos analizados pueden ser consultados a través de una API REST (ver el archivo `covid-api.yml`) o de un dashboard elaborado con [Redash](https://redash.io)
+
+El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.com), automatizando la orquestación de los contenedores con [Docker Compose](https://docs.docker.com/compose/).
 
 ## Despliegue
 
@@ -28,6 +32,9 @@ Para evitar sobrecargar el sistema, es recomendable ejecutar por separado los co
 
 ## API REST
 La información analizada almacenada en la base de datos es accesible a través de una API REST, desplegada mediante un servidor en el puerto 11223. Para más información sobre esta API, consultar la documentación en el fichero `covid-api.yaml`.
+
+## Dashboard
+Para visualizar los datos de una forma sencilla y visual, puedes usar el dashboard desplegado con Redash, disponible en http://localhost:5000/dashboards/1-covid-19-espa-a . 
 
 ## Estructura de archivos:
 - `docker-compose.yml`: define los contenedores Docker que conforman este proyecto.
@@ -85,3 +92,7 @@ La información analizada almacenada en la base de datos es accesible a través 
 - [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/): obtención de las URLs de los informes PDFs de la RENAVE desde su página web.
 - [Pandas](https://pypi.org/project/pandas/): análisis y transformación de los datos extraídos.
 - [pymongo](https://pypi.org/project/pymongo/): lectura y escritura de los datos extraídos y analizados desde/en la base de datos.
+
+## Contacto
+- Guillermo Barreiro Fernández <guillermo.barreiro@det.uvigo.es>
+- Martín López Nores <mlnores@det.uvigo.es>

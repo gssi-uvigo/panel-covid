@@ -7,7 +7,7 @@
 
 Este proyecto pretende recopilar toda la información disponible públicamente sobre la evolución de la pandemia del COVID-19 en España, con el fin de poder analizarla y mostrar los resultados al público, de manera objetiva, sencilla y visualmente atractiva.
 
-La descarga y extracción de los datos está implementada con [Apache Airflow](https://airflow.apache.org), los cuales se almacenan para su posterior análisis y visualización en una base de datos [MongoDB](https://mongodb.com). Posteriormente, usando también Apache Airflow, se procede al análisis de los datos almacenados, cuyos resultados se almacenan en otra base de datos, también dentro del mismo servidor MongoDB. Estos datos analizados pueden ser consultados a través de una API REST (ver el archivo `covid-api.yml`) o de un dashboard elaborado con [Redash](https://redash.io)
+La descarga y extracción de los datos está implementada con [Apache Airflow](https://airflow.apache.org), los cuales se almacenan para su posterior análisis y visualización en una base de datos [MongoDB](https://mongodb.com). Posteriormente, usando también Apache Airflow, se procede al análisis de los datos almacenados, cuyos resultados se almacenan en otra base de datos, también dentro del mismo servidor MongoDB. Estos datos analizados pueden ser consultados a través de una API REST (ver el archivo `covid-api.yml`) o de un dashboard elaborado con [Redash](https://redash.io).
 
 El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.com), automatizando la orquestación de los contenedores con [Docker Compose](https://docs.docker.com/compose/).
 

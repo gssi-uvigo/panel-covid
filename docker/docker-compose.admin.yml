@@ -1,19 +1,20 @@
 version: "3.8"
+x-airflow-service: &airflow-service
+  build: ./docker/airflow
+  depends_on: 
+    - airflow-backend
+    - database
+  networks: 
+    - airflow
+  volumes:
+    - "airflow-engine:/opt/airflow"
+    - "./dags:/opt/airflow/dags"
+    - "./covid_data:/home/airflow/covid"
+  env_file:
+    - ./docker/mysql.env
 services:
   airflow-initializer:
-    build: ./docker/airflow
-    command: db upgrade && connections add --conn-type mongo --conn-description 'Connection to the MongoDB datastore' --conn-host database --conn-login airflow_user --conn-password contrasenha123 --conn-schema covid_admin mongo_covid
-    depends_on: 
-      - airflow-backend
-    networks: 
-      - airflow
-    volumes:
-      - ./airflow:/opt/airflow/
-    env_file:
-      - ./docker/mysql.env
+    <<: *airflow-service
+    entrypoint: bash -c
+    command: (db upgrade) && (connections add --conn-type mongo --conn-description 'Connection to the MongoDB datastore' --conn-host database --conn-login airflow_user --conn-password contrasenha123 --conn-schema covid_admin mongo_covid) && (users create --username admin --firstname Nombre --lastname Apellido --role Admin --email covid_dashboard@noreply.com --password nonecesitocontrasenha) && (airflow dags unpause COVIDWorkflow)
 
-  redash-initializer:
-    image: node:latest
-    command: cd redash && npm install && npm run build
-    volumes:
-      - ./redash:/redash

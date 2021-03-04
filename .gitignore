@@ -4,4 +4,3 @@ __pycache__
 !/.env
 /airflow
 node_modules
-package-lock.json

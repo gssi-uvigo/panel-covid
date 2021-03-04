@@ -1,13 +1,15 @@
 # Dashboard COVID-19 España
+
 *[Grupo de Investigación en Servicios para la Sociedad de la Información (GSSI)](http://gssi.det.uvigo.es)*
 
 *[Centro de Investigación en Tecnologías de Telecomunicación – atlanTTic](https://atlanttic.uvigo.es)*
 
 *[Universidad de Vigo](https://uvigo.gal)*
 
+
 Este proyecto pretende recopilar toda la información disponible públicamente sobre la evolución de la pandemia del COVID-19 en España, con el fin de poder analizarla y mostrar los resultados al público, de manera objetiva, sencilla y visualmente atractiva.
 
-La descarga y extracción de los datos está implementada con [Apache Airflow](https://airflow.apache.org), los cuales se almacenan para su posterior análisis y visualización en una base de datos [MongoDB](https://mongodb.com). Posteriormente, usando también Apache Airflow, se procede al análisis de los datos almacenados, cuyos resultados se almacenan en otra base de datos, también dentro del mismo servidor MongoDB. Estos datos analizados pueden ser consultados a través de una API REST (ver el archivo `covid-api.yml`) o de un dashboard elaborado con [Redash](https://redash.io).
+La descarga y extracción de los datos está implementada con [Apache Airflow](https://airflow.apache.org), los cuales se almacenan para su posterior análisis y visualización en una base de datos [MongoDB](https://mongodb.com). Posteriormente, usando también Apache Airflow, se procede al análisis de los datos almacenados, cuyos resultados se almacenan en otra base de datos, también dentro del mismo servidor MongoDB. Estos datos analizados pueden ser consultados a través de una API REST o de un dashboard elaborado con [Redash](https://redash.io).
 
 El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.com), automatizando la orquestación de los contenedores con [Docker Compose](https://docs.docker.com/compose/).
 
@@ -17,28 +19,31 @@ El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.
 
 `docker-compose build`
 
-`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run`
+`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run --rm airflow-initializer`
 
-`docker-compose up`
-
-`docker exec -it covid-dashboard_airflow-scheduler_1 airflow users create --username admin --firstname`  *Tu nombre* `--lastname` *Tu apellido* `--role Admin --email` *Tu email*
+`docker-compose stop`
 
 ### Lanzamiento de los contenedores:
 `docker-compose up`
 
-Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará una vez por día el workflow de descarga, extracción y análisis de los datos.
+Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará una vez por día el workflow de descarga, extracción y análisis de los datos. Para monitorizar y configurar la ejecución del workflow, entrar en http://localhost:8080 con el usuario `admin` y la contraseña `nonecesitocontrasenha`.
 
 Para evitar sobrecargar el sistema, es recomendable ejecutar por separado los contenedores de Airflow para descargar, extraer y analizar la información, y posteriormente los de Redash para visualizarla. A partir de la versión 1.28 de Docker Compose, se incluye la opción de crear perfiles, lo que permitiría diferenciar entre los contenedores necesarios para la descarga, extracción y análisis, para la API REST y para el dashboard. Tan pronto pueda disponer de esta versión de Docker Compose, implementaré esta funcionalidad.
 
 - Despliegue de Airflow (descarga, extracción y análisis de los datos): `docker-compose up airflow-scheduler airflow-webserver`
 - Despliegue de API REST (consulta de los datos procesados y analizados): `docker-compose up rest-api`
-- Despliegue de Redash (visualización de los datos): `docker-compose up redash-scheduler redash-worker`
+- Despliegue de Redash (visualización de los datos): `docker-compose up redash-nginx`
 
-## API REST
-La información analizada almacenada en la base de datos es accesible a través de una API REST, desplegada mediante un servidor en el puerto 11223. Para más información sobre esta API, consultar la documentación en el fichero `covid-api.yaml`.
+## API REST y base de datos
+La información analizada almacenada en la base de datos es accesible a través de una API REST, desplegada mediante un servidor en el puerto 11223. Para más información sobre esta API, consultar la documentación en el fichero `covid-api.yaml`. Para acceder directamente a la base de datos MongoDB, conectarse al puerto 12345 con el usuario `data_read` y la contraseña `givemesomedata`. 
 
 ## Dashboard
-Para visualizar los datos de una forma sencilla y visual, puedes usar el dashboard desplegado con Redash, disponible en http://localhost:5000/dashboards/1-covid-19-espa-a . 
+Para visualizar los datos de una forma sencilla y visual, puedes usar el dashboard desplegado con Redash, disponible en http://localhost/public/dashboards/3JJKFpOF7Fx5ES73vnFFRbTx5VoiqEx4ZP2rL895?refresh=86400 . Para realizar modificaciones en el dashboard, entrar en http://localhost/dashboard/covid-19-espa-a e iniciar sesión con el usuario `covid_dashboard@noreply.com` y la contraseña `nonecesitocontrasenha`.
+
+![hospitalizaciones](/readme_screenshots/dashboard_hospitalizaciones.png)
+![muertes](/readme_screenshots/dashboard_muertes.png)
+![vacunación y transmisión](/readme_screenshots/dashboard_vacunacion_transmision.png)
+
 
 ## Estructura de archivos:
 - `docker-compose.yml`: define los contenedores Docker que conforman este proyecto.

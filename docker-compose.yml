@@ -1,19 +1,32 @@
 version: "3.9"
 x-redash-service: &redash-service
-  build:
-    context: ./docker/redash
-    args:
-      skip_frontend_build: "true"
+  image: redash/redash:8.0.0.b32245
+  depends_on:
+    - redash-postgres
+    - redash-redis
+    - database
+  networks:
+    - redash
+  restart: always
+x-airflow-service: &airflow-service
+  build: ./docker/airflow
+  depends_on: 
+    - airflow-backend
+    - database
+  networks: 
+    - airflow
   volumes:
-    - ./docker/redash:/app
+    - "airflow-engine:/opt/airflow"
+    - "./dags:/opt/airflow/dags"
+    - "./covid_data:/home/airflow/covid"
+  env_file:
+    - ./docker/mysql.env
 x-redash-environment: &redash-environment
-  REDASH_LOG_LEVEL: "WARN"
+  PYTHON_UNBUFFERED: 0
+  REDASH_LOG_LEVEL: "INFO"
   REDASH_REDIS_URL: "redis://redash-redis:6379/0"
   REDASH_DATABASE_URL: "postgresql://postgres@redash-postgres/postgres"
-  REDASH_RATELIMIT_ENABLED: "false"
-  REDASH_MAIL_DEFAULT_SENDER: "redash@example.com"
-  REDASH_MAIL_SERVER: "email"
-  REDASH_ENFORCE_CSRF: "true"
+
 services:
   airflow-backend:
     image: mysql:latest
@@ -28,36 +41,14 @@ services:
       - SYS_NICE
     
   airflow-scheduler:
-    build: ./docker/airflow
+    <<: *airflow-service
     command: scheduler
-    depends_on: 
-      - airflow-backend
-      - database
-    networks: 
-      - airflow
-    volumes:
-      - "airflow-engine:/opt/airflow"
-      - "./dags:/opt/airflow/dags"
-      - "./covid_data:/home/airflow/covid"
-    env_file:
-      - ./docker/mysql.env
 
   airflow-webserver:
-    build: ./docker/airflow
-    command: webserver
-    depends_on: 
-      - airflow-backend
-      - database
-    networks: 
-      - airflow
-    volumes:
-      - "airflow-engine:/opt/airflow"
-      - "./dags:/opt/airflow/dags"
-      - "./covid_data:/home/airflow/covid"
+    <<: *airflow-service
+    command: webserver 
     ports:
       - "8080:8080"
-    env_file:
-      - ./docker/mysql.env  
 
   database:
     build: ./docker/mongodb/
@@ -82,53 +73,68 @@ services:
 
   redash-server:
     <<: *redash-service
-    command: dev_server
+    command: server
     depends_on:
-      - database
-      - redash-postgres
-      - redash-redis
+      - redash-scheduler
+      - redash-scheduled_worker
+      - redash-adhoc_worker
     ports:
       - "5000:5000"
-      - "5678:5678"
-    networks:
-      - redash
     environment:
       <<: *redash-environment
-      PYTHONUNBUFFERED: 0
+      REDASH_WEB_WORKERS: 4      
+  
   redash-scheduler:
     <<: *redash-service
-    command: dev_scheduler
-    depends_on:
-      - redash-server
-    networks:
-      - redash
+    command: scheduler
     environment:
       <<: *redash-environment
-  redash-worker:
+      QUEUES: "celery"
+      WORKERS_COUNT: 1
+  
+  redash-scheduled_worker:
     <<: *redash-service
-    command: dev_worker
-    depends_on:
-      - redash-server
-    networks:
-      - redash
+    command: worker
     environment:
       <<: *redash-environment
-      PYTHONUNBUFFERED: 0
+      QUEUES: "scheduled_queries,schemas"
+      WORKERS_COUNT: 1
+  
+  redash-adhoc_worker:
+    <<: *redash-service
+    command: worker
+    environment:
+      <<: *redash-environment
+      QUEUES: "queries"
+      WORKERS_COUNT: 2
+  
   redash-redis:
-    image: redis:3-alpine
-    restart: unless-stopped
+    image: redis:5.0-alpine
+    restart: always
     networks:
       - redash
+  
   redash-postgres:
     build: ./docker/redash-database
     networks:
       - redash
-    volumes:
-      - redash-postgres
-    command: "postgres -c fsync=off -c full_page_writes=off -c synchronous_commit=OFF"
-    restart: unless-stopped
     environment:
       POSTGRES_HOST_AUTH_METHOD: "trust"
+    volumes:
+      - "redash-postgres:/var/lib/postgresql/data"
+    restart: always
+  
+  redash-nginx:
+    image: redash/nginx:latest
+    networks:
+      - redash
+    ports:
+      - "80:80"
+    depends_on:
+      - redash-server
+    links:
+      - redash-server:redash
+    restart: always
 
 networks:
   airflow:

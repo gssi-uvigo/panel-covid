@@ -26,7 +26,7 @@ El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.
 ### Lanzamiento de los contenedores:
 `docker-compose up`
 
-Una vez que todos los contenedores estén encendidos, Apache Airflow lanzará una vez por día el workflow de descarga, extracción y análisis de los datos. Para monitorizar y configurar la ejecución del workflow, entrar en http://localhost:8080 con el usuario `admin` y la contraseña `nonecesitocontrasenha`.
+Una vez que todos los contenedores estén encendidos, se puede programar la ejecución diaria del workflow de descarga, extracción y análisis de los datos con el comando `docker compose exec airflow-scheduler dags unpause COVIDWorkflow`. Para monitorizar y configurar la ejecución del workflow, entrar en http://localhost:8080 con el usuario `admin` y la contraseña `nonecesitocontrasenha`.
 
 Para evitar sobrecargar el sistema, es recomendable ejecutar por separado los contenedores de Airflow para descargar, extraer y analizar la información, y posteriormente los de Redash para visualizarla. A partir de la versión 1.28 de Docker Compose, se incluye la opción de crear perfiles, lo que permitiría diferenciar entre los contenedores necesarios para la descarga, extracción y análisis, para la API REST y para el dashboard. Tan pronto pueda disponer de esta versión de Docker Compose, implementaré esta funcionalidad.
 

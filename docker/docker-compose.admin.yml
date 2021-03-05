@@ -13,6 +13,14 @@ x-airflow-service: &airflow-service
   env_file:
     - ./docker/mysql.env
 services:
+  redash-initializer:
+    image: busybox
+    volumes:
+      - "./docker/redash-database:/redash-database"
+    working_dir: /redash-database
+    entrypoint: sh
+    command: -c "cat redash-covid-?? > redash-covid.sql"
+
   airflow-initializer:
     <<: *airflow-service
     entrypoint: bash

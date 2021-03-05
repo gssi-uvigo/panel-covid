@@ -3,4 +3,5 @@ __pycache__
 .*
 !/.env
 /airflow
+/docker/redash-database/redash-covid.sql
 node_modules

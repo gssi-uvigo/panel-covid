@@ -17,6 +17,8 @@ El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.
 
 ### Configuración inicial:
 
+`docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run --rm redash-initializer`
+
 `docker-compose build`
 
 `docker-compose -f docker-compose.yml -f docker/docker-compose.admin.yml run --rm airflow-initializer`

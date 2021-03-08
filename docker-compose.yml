@@ -7,6 +7,7 @@ x-redash-service: &redash-service
     - database
   networks:
     - redash
+  profiles: ["redash"]
 x-airflow-service: &airflow-service
   build: ./docker/airflow
   depends_on: 
@@ -20,6 +21,7 @@ x-airflow-service: &airflow-service
     - "./covid_data:/home/airflow/covid"
   env_file:
     - ./docker/mysql.env
+  profiles: ["airflow"]
 x-redash-environment: &redash-environment
   PYTHON_UNBUFFERED: 0
   REDASH_LOG_LEVEL: "INFO"
@@ -38,6 +40,7 @@ services:
       - ./docker/mysql.env
     cap_add:
       - SYS_NICE
+    profiles: ["airflow"]
     
   airflow-scheduler:
     <<: *airflow-service
@@ -82,7 +85,7 @@ services:
       - "5000:5000"
     environment:
       <<: *redash-environment
-      REDASH_WEB_WORKERS: 4      
+      REDASH_WEB_WORKERS: 4  
   
   redash-scheduler:
     <<: *redash-service
@@ -112,6 +115,7 @@ services:
     image: redis:5.0-alpine
     networks:
       - redash
+    profiles: ["redash"]
   
   redash-postgres:
     build: ./docker/redash-database
@@ -121,6 +125,7 @@ services:
       POSTGRES_HOST_AUTH_METHOD: "trust"
     volumes:
       - "redash-postgres:/var/lib/postgresql/data"
+    profiles: ["redash"]
   
   redash-nginx:
     image: redash/nginx:latest
@@ -132,6 +137,7 @@ services:
       - redash-server
     links:
       - redash-server:redash
+    profiles: ["redash"]
 
 networks:
   airflow:

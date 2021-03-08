@@ -28,11 +28,11 @@ El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.
 
 Una vez que todos los contenedores estén encendidos, se puede programar la ejecución diaria del workflow de descarga, extracción y análisis de los datos con el comando `docker-compose exec airflow-scheduler dags unpause COVIDWorkflow`. Para monitorizar y configurar la ejecución del workflow, entrar en http://localhost:8080 con el usuario `admin` y la contraseña `nonecesitocontrasenha`.
 
-Para evitar sobrecargar el sistema, es recomendable ejecutar por separado los contenedores de Airflow para descargar, extraer y analizar la información, y posteriormente los de Redash para visualizarla. A partir de la versión 1.28 de Docker Compose, se incluye la opción de crear perfiles, lo que permitiría diferenciar entre los contenedores necesarios para la descarga, extracción y análisis, para la API REST y para el dashboard. Tan pronto pueda disponer de esta versión de Docker Compose, implementaré esta funcionalidad.
+Para evitar sobrecargar el sistema, es recomendable ejecutar por separado los contenedores de Airflow para descargar, extraer y analizar la información, y posteriormente los de Redash para visualizarla. A partir de la [versión 1.28 de Docker Compose](https://docs.docker.com/compose/release-notes/#1280), se incluye la opción de crear perfiles, lo que permite diferenciar entre los contenedores necesarios para la descarga, extracción y análisis y los necesarios para el dashboard.
 
-- Despliegue de Airflow (descarga, extracción y análisis de los datos): `docker-compose up airflow-scheduler airflow-webserver`
-- Despliegue de API REST (consulta de los datos procesados y analizados): `docker-compose up rest-api`
-- Despliegue de Redash (visualización de los datos): `docker-compose up redash-nginx`
+- Despliegue básico (base de datos y API REST): `docker-compose up`
+- Despliegue básico + Airflow (descarga, extracción y análisis de los datos): `docker-compose --profile airflow up`
+- Despliegue básico + Redash (visualización de los datos): `docker-compose --profile redash up`
 
 ## API REST y base de datos
 La información analizada almacenada en la base de datos es accesible a través de una API REST, desplegada mediante un servidor en el puerto 11223. Para más información sobre esta API, consultar la documentación en el fichero `covid-api.yaml`. Para acceder directamente a la base de datos MongoDB, conectarse al puerto 12345 con el usuario `data_read` y la contraseña `givemesomedata`. 

@@ -17,4 +17,4 @@ services:
     <<: *airflow-service
     entrypoint: bash
     command: -c "airflow db upgrade && airflow connections add --conn-type mongo --conn-description 'Connection to the MongoDB datastore' --conn-host database --conn-login airflow_user --conn-password contrasenha123 --conn-schema covid_admin mongo_covid && airflow users create --username admin --firstname Nombre --lastname Apellido --role Admin --email covid_dashboard@noreply.com --password nonecesitocontrasenha"
-
+    profiles: ["airflow"]

@@ -249,8 +249,9 @@ class VaccinationData:
 
     def move_data(self):
         """Just move the data from the extracted to the analyzed database"""
-        for document in self.db_read.db.get_collection('vaccination').find({}):
-            self.db_write.db.get_collection('vaccination').insert(document)
+        vaccination_collection = self.db_write.db.get_collection('vaccination')
+        vaccination_collection.delete_many({})
+        vaccination_collection.insert_many(self.db_read.db.get_collection('vaccination').find({}))
 
 
 class SymptomsData:
@@ -494,7 +495,7 @@ class DiagnosticTests:
 
     def __store_data__(self):
         """Store the processed dataset in the database"""
-        mongo_data = self.diagnostic_tests_df.to_dict('records')
+        mongo_data = self.diagnostic_tests_df.replace({np.nan: None}).to_dict('records')
         collection = 'diagnostic_tests'
         self.db_write.store_data(collection, mongo_data)
 

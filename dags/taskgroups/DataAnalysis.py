@@ -249,9 +249,11 @@ class VaccinationData:
 
     def move_data(self):
         """Just move the data from the extracted to the analyzed database"""
-        vaccination_collection = self.db_write.db.get_collection('vaccination')
-        vaccination_collection.delete_many({})
-        vaccination_collection.insert_many(self.db_read.db.get_collection('vaccination').find({}))
+        vaccination_collections_names = ['vaccination_general', 'vaccination_ages_single', 'vaccination_ages_complete']
+        for collection_name in vaccination_collections_names:
+            vaccination_collection = self.db_write.db.get_collection(collection_name)
+            vaccination_collection.delete_many({})
+            vaccination_collection.insert_many(self.db_read.db.get_collection(collection_name).find({}))
 
 
 class SymptomsData:

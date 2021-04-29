@@ -71,14 +71,20 @@ class VaccinationReportsTaskGroup(TaskGroup):
     def store_vaccination_reports():
         """Store in the database the downloaded reports"""
         vaccination_data = []
+        vaccination_single = []
+        vaccination_complete = []
 
         for file in os.listdir(VaccinationReportsTaskGroup.reports_folder):
-            # Read the report as a DataFrame
-            df = pd.read_excel(VaccinationReportsTaskGroup.reports_folder + '/' + file)
+            # Read the report
+            df = pd.read_excel(VaccinationReportsTaskGroup.reports_folder + '/' + file, sheet_name=None)
 
             # Get the report date
             date_string = file[-12:-4]
             date_report = dt.strptime(date_string, VaccinationReportsTaskGroup.date_filename_format)
+            print(f"Reading report of {date_report.isoformat()}")
+
+            # Get the basic vaccination data
+            df_basic_data = df[list(df.keys())[0]]
 
             # Translate the DataFrame columns
             columns_translations = {'Unnamed: 0': 'autonomous_region', 'Dosis entregadas (1)': 'received_doses.total',
@@ -86,19 +92,21 @@ class VaccinationReportsTaskGroup(TaskGroup):
                                     'Dosis entregadas Pfizer (1)': 'received_doses.Pfizer',
                                     'Dosis entregadas Moderna (1)': 'received_doses.Moderna',
                                     'Dosis entregadas AstraZeneca (1)': 'received_doses.AstraZeneca',
+                                    'Dosis entregadas Janssen (1)': 'received_doses.Janssen',
                                     'Dosis administradas (2)': 'applied_doses',
                                     '% sobre entregadas': 'percentage_applied_doses',
+                                    'Nº Personas con al menos 1 dosis': 'number_at_least_single_dose_people',
                                     'Nº Personas vacunadas(pauta completada)': 'number_fully_vaccinated_people',
                                     'Fecha de la última vacuna registrada (2)': 'date'}
-            df = df.rename(columns=columns_translations)
-            df['autonomous_region'] = df['autonomous_region'].replace({'Totales': 'España'})
+            df_basic_data = df_basic_data.rename(columns=columns_translations)
+            df_basic_data['autonomous_region'] = df_basic_data['autonomous_region'].replace({'Totales': 'España'})
 
             # Transform some columns
-            df['date'] = date_report
-            df['percentage_applied_doses'] = 100 * df['percentage_applied_doses']
+            df_basic_data['date'] = date_report
+            df_basic_data['percentage_applied_doses'] = 100 * df_basic_data['percentage_applied_doses']
 
-            # Transform the DataFrame into a MongoDB collection of documents
-            df_dict = df.to_dict('records')
+            # Save into MongoDB
+            df_dict = df_basic_data.to_dict('records')
             mongo_data = []
 
             # Transform the a.b columns into a: {b: ''}
@@ -117,6 +125,43 @@ class VaccinationReportsTaskGroup(TaskGroup):
 
             vaccination_data.extend(mongo_data)
 
+            if len(df) > 3:
+                # Newer vaccination reports: get the age ranges
+                df_single_dose = df[list(df.keys())[-2]]
+                df_complete_dose = df[list(df.keys())[-1]]
+
+                # Remove useless columns and rename the useful ones
+                for number_doses in ['single', 'complete']:
+                    df_doses = df_single_dose if number_doses == 'single' else df_complete_dose
+                    columns = df_doses.columns
+                    df_doses = df_doses.drop(
+                        columns=[columns[i] for i in [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20, 22, 23]])
+                    columns_translations = {'Unnamed: 0': 'autonomous_region', '%': '80+', '%.1': '70-79',
+                                            '%.2': '60-69', '%.3': '50-59', '%.4': '25-49', '%.5': '18-24',
+                                            '%.6': '16-17', columns[-1]: 'total'}
+                    df_doses = df_doses.rename(columns=columns_translations)
+                    df_doses['autonomous_region'] = df_doses['autonomous_region'].replace({'Total España': 'España'})
+
+                    # Remove information about the navy
+                    df_doses = df_doses[df_doses['autonomous_region'] != 'Fuerzas Armadas']
+
+                    # Multiply by 100 the percentages
+                    df_doses[df_doses.columns[1:]] = 100 * df_doses[df_doses.columns[1:]]
+
+                    # Add the date to the DataFrame
+                    df_doses['date'] = date_report
+
+                    # Convert data to dict
+                    df_dict = df_doses.to_dict('records')
+
+                    if number_doses == 'single':
+                        vaccination_single.extend(df_dict)
+                    else:
+                        vaccination_complete.extend(df_dict)
+
         # Store the data in MongoDB
         database = MongoDatabase(MongoDatabase.extracted_db_name)
-        database.store_data("vaccination", vaccination_data)
+        database.store_data("vaccination_general", vaccination_data)
+        database.store_data("vaccination_ages_single", vaccination_single)
+        database.store_data("vaccination_ages_complete", vaccination_complete)
+

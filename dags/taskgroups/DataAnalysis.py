@@ -247,13 +247,31 @@ class VaccinationData:
         self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
 
-    def move_data(self):
-        """Just move the data from the extracted to the analyzed database"""
-        vaccination_collections_names = ['vaccination_general', 'vaccination_ages_single', 'vaccination_ages_complete']
+    def __calculate_vaccinated_percentage__(self):
+        """Calculate the percentage of vaccinated people"""
+        population_df = self.db_read.read_data('population_ar', {'age_range': 'total'}, ['autonomous_region', 'total'])
+        vaccination_df = self.db_read.read_data('vaccination_general')
+        df_vaccination_join = pd.merge(vaccination_df, population_df, on='autonomous_region')
+        df_vaccination_join['percentage_fully_vaccinated'] = \
+            100 * df_vaccination_join['number_fully_vaccinated_people'] / df_vaccination_join['total']
+        df_vaccination_join['percentage_at_least_single_dose'] = \
+            100 * df_vaccination_join['number_at_least_single_dose_people'] / df_vaccination_join['total']
+        df_vaccination_join = df_vaccination_join.drop(columns=['total'])
+        self.df_vaccination_general = df_vaccination_join.replace({np.nan: None})
+
+    def __move_ages_data__(self):
+        """Just move the ages data from the extracted to the analyzed database"""
+        vaccination_collections_names = ['vaccination_ages_single', 'vaccination_ages_complete']
         for collection_name in vaccination_collections_names:
             vaccination_collection = self.db_write.db.get_collection(collection_name)
             vaccination_collection.delete_many({})
             vaccination_collection.insert_many(self.db_read.db.get_collection(collection_name).find({}))
+
+    def move_data(self):
+        """Calculate the vaccination percentage and move the data"""
+        self.__calculate_vaccinated_percentage__()
+        self.db_write.store_data('vaccination_general', self.df_vaccination_general.to_dict('records'))
+        self.__move_ages_data__()
 
 
 class SymptomsData:

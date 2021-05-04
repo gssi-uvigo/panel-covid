@@ -1,6 +1,6 @@
 version: "3.9"
 x-redash-service: &redash-service
-  image: redash/redash:8.0.0.b32245
+  image: redash/redash:preview
   depends_on:
     - redash-postgres
     - redash-redis

@@ -130,9 +130,10 @@ class VaccinationReportsTaskGroup(TaskGroup):
                 df_single_dose = df[list(df.keys())[-2]]
                 df_complete_dose = df[list(df.keys())[-1]]
 
-                # Remove useless columns and rename the useful ones
                 for number_doses in ['single', 'complete']:
                     df_doses = df_single_dose if number_doses == 'single' else df_complete_dose
+
+                    # Remove useless columns and rename the useful ones
                     columns = df_doses.columns
                     df_doses = df_doses.drop(
                         columns=[columns[i] for i in [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20, 22, 23]])
@@ -145,11 +146,18 @@ class VaccinationReportsTaskGroup(TaskGroup):
                     # Remove information about the navy
                     df_doses = df_doses[df_doses['autonomous_region'] != 'Fuerzas Armadas']
 
+                    # Trim the autonomous region name (some have a trailing space for unknown reason)
+                    df_doses['autonomous_region'] = df_doses['autonomous_region'].apply(lambda x: x.strip())
+
                     # Multiply by 100 the percentages
                     df_doses[df_doses.columns[1:]] = 100 * df_doses[df_doses.columns[1:]]
 
                     # Add the date to the DataFrame
                     df_doses['date'] = date_report
+
+                    # Melt age range columns
+                    df_doses = df_doses.melt(id_vars=['autonomous_region', 'date'], var_name='age_range',
+                                             value_name='percentage')
 
                     # Convert data to dict
                     df_dict = df_doses.to_dict('records')

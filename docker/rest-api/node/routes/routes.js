@@ -1,4 +1,4 @@
-const endpoints_list = ['/', '/cases', '/deaths', '/hospitalizations', '/hospitals_pressure', '/diagnostic_tests', '/covid_vs_all_deaths', '/outbreaks_description', '/top_death_causes', '/transmission_indicators', '/vaccination', '/population_pyramid_variation']
+const endpoints_list = ['/', '/cases', '/deaths', '/hospitalizations', '/hospitals_pressure', '/diagnostic_tests', '/covid_vs_all_deaths', '/outbreaks_description', '/top_death_causes', '/transmission_indicators', '/vaccination/general', '/vaccination/ages/single', '/vaccination/ages/complete', '/population_pyramid_variation']
 
 /**
  * Log a request datetime, client IP, method, endpoint and response status code in the console.
@@ -228,7 +228,7 @@ const router = (app, db) => {
         // Get the projected columns, if any
         const projection = projectColumns(request)
 
-        // Query the database for the percentage of deaths caused by COVID
+        // Query the database
         const query = db.collection('covid_vs_all_deaths').find(filters).project(projection)
         limitQuerySize(request, query).toArray(function (err, result) {
             if (err) response.sendStatus(500);
@@ -250,7 +250,7 @@ const router = (app, db) => {
         // Get the projected columns, if any
         const projection = projectColumns(request)
 
-        // Query the database for the percentage of deaths caused by COVID
+        // Query the database
         const query = db.collection('transmission_indicators').find(filters).project(projection)
         limitQuerySize(request, query).toArray(function (err, result) {
             if (err) response.sendStatus(500);
@@ -266,7 +266,7 @@ const router = (app, db) => {
      * Return the most common symptoms.
     */
     app.get('/symptoms', (request, response) => {
-        // Query the database for the percentage of deaths caused by COVID
+        // Query the database
         db.collection('symptoms').find().toArray(function (err, result) {
             if (err) response.sendStatus(500);
             response.send(result);
@@ -277,18 +277,62 @@ const router = (app, db) => {
     });
 
     /** 
-     * GET /vaccination
-     * Return the vaccination data.
+     * GET /vaccination/general
+     * Return the general vaccination data.
     */
-    app.get('/vaccination', (request, response) => {
+    app.get('/vaccination/general', (request, response) => {
         // Get the request parameters, if any
         const filters = getQueryFilters(request, ['date', 'autonomous_region'])
 
         // Get the projected columns, if any
         const projection = projectColumns(request)
 
-        // Query the database for the percentage of deaths caused by COVID
-        const query = db.collection('vaccination').find(filters).project(projection)
+        // Query the database
+        const query = db.collection('vaccination_general').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+
+    /** 
+     * GET /vaccination/ages/single
+     * Return the single and complete vaccination data for each range and Autonomous Region.
+    */
+     app.get('/vaccination/ages/single', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['date', 'autonomous_region', 'age_range'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database
+        const query = db.collection('vaccination_ages_single').find(filters).project(projection)
+        limitQuerySize(request, query).toArray(function (err, result) {
+            if (err) response.sendStatus(500);
+            response.send(result);
+        });
+
+        // Log the request in the console
+        logRequest(request, response);
+    });
+
+    /** 
+     * GET /vaccination/ages/complete
+     * Return the complete vaccination data for each age range and Autonomous Region.
+    */
+     app.get('/vaccination/ages/complete', (request, response) => {
+        // Get the request parameters, if any
+        const filters = getQueryFilters(request, ['date', 'autonomous_region', 'age_range'])
+
+        // Get the projected columns, if any
+        const projection = projectColumns(request)
+
+        // Query the database
+        const query = db.collection('vaccination_ages_complete').find(filters).project(projection)
         limitQuerySize(request, query).toArray(function (err, result) {
             if (err) response.sendStatus(500);
             response.send(result);
@@ -306,7 +350,7 @@ const router = (app, db) => {
         // Get the request parameters, if any
         const filters = getQueryFilters(request, ['gender', 'age_range'])
 
-        // Query the database for the percentage of deaths caused by COVID
+        // Query the database
         const query = db.collection('vaccination').find(filters).toArray(function (err, result) {
             if (err) response.sendStatus(500);
             response.send(result);

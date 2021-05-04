@@ -498,7 +498,7 @@ components:
           description: Porcentaje de casos que no presentan síntomas
           example: 33.1
 
-    Vaccination:
+    VaccinationGeneral:
       title: Evolución de la campaña de vacunación
       description: Número acumulado de vacunas recibidas y administradas y de personas completamente vacunadas por Comunidad Autónoma y día.
       type: object
@@ -525,6 +525,24 @@ components:
           type: integer
           description: Número de personas que han recibido la pauta completa de la vacuna
           example: 226102
+
+    VaccinationAgeRange:
+      title: Vacunación por edades
+      description: Porcentaje de población parcial o completamente vacunada por fecha, Comunidad Autónoma y grupo de edad.
+      type: object
+      properties:
+        autonomous_region:
+          $ref: '#/components/schemas/AutonomousRegion'
+        date:
+          title: Fecha
+          type: string
+          format: date
+        age_range:
+          $ref: '#/components/schemas/AgeRange'
+        percentage:
+          title: Porcentaje de población
+          type: number
+          example: 22.80
 
     Symptoms:
       title: Síntomas más habituales provocados por el COVID
@@ -855,10 +873,10 @@ paths:
                 items:
                   $ref: '#/components/schemas/Symptoms'
 
-  /vaccination:
+  /vaccination/general:
     get:
       summary: Evolución de la campaña de vacunación
-      description: Número acumulado de vacunas recibidas y administradas y de personas completamente vacunadas por Comunidad Autónoma y día.
+      description: Número acumulado de vacunas recibidas y administradas y de personas parcial y completamente vacunadas por Comunidad Autónoma y día.
       parameters:
         - $ref: '#/components/parameters/date'
         - $ref: '#/components/parameters/autonomous_region'
@@ -871,7 +889,7 @@ paths:
             type: array
             items:
               type: string
-              enum: ['date', 'autonomous_region', 'received_doses', 'applied_doses', 'percentage_applied_doses', 'number_fully_vaccinated_people']
+              enum: ['date', 'autonomous_region', 'received_doses', 'applied_doses', 'percentage_applied_doses', 'number_fully_vaccinated_people', 'number_at_least_single_dose_people', 'percentage_fully_vaccinated', 'percentage_at_least_single_dose']
 
       responses:
         '200':
@@ -881,7 +899,68 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Vaccination'
+                  $ref: '#/components/schemas/VaccinationGeneral'
+
+
+  /vaccination/ages/single:
+    get:
+      summary: Vacunación por edades con al menos una dosis
+      description: Porcentaje de población que ha recibido al menos una dosis por fecha, Comunidad Autónoma y grupo de edad.
+      parameters:
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/autonomous_region'
+        - $ref: '#/components/parameters/age_range'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['date', 'autonomous_region', 'age_range', 'percentage']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VaccinationAgeRange'
+
+
+  /vaccination/ages/complete:
+    get:
+      summary: Vacunación por edades con la dosis completa
+      description: Porcentaje de población que ha recibido la pauta completa por fecha, Comunidad Autónoma y grupo de edad.
+      parameters:
+        - $ref: '#/components/parameters/date'
+        - $ref: '#/components/parameters/autonomous_region'
+        - $ref: '#/components/parameters/age_range'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: response_contents
+          description: Devuelve solo algunos campos. Si no se especifica este parámetro, se devolverán todos los campos para los datos solicitados.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['date', 'autonomous_region', 'age_range', 'percentage']
+
+      responses:
+        '200':
+          description: Devuelve los datos solicitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VaccinationAgeRange'
+
 
   /population_pyramid_variation:
     get:

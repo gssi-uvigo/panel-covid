@@ -146,6 +146,9 @@ class VaccinationReportsTaskGroup(TaskGroup):
                     # Remove information about the navy
                     df_doses = df_doses[df_doses['autonomous_region'] != 'Fuerzas Armadas']
 
+                    # Remove invalid data
+                    df_doses = df_doses.dropna()
+
                     # Trim the autonomous region name (some have a trailing space for unknown reason)
                     df_doses['autonomous_region'] = df_doses['autonomous_region'].apply(lambda x: x.strip())
 

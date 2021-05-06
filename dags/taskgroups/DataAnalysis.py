@@ -246,18 +246,29 @@ class VaccinationData:
         # Connection to the extracted data database for reading, and to the analyzed data for writing
         self.db_read = MongoDatabase(MongoDatabase.extracted_db_name)
         self.db_write = MongoDatabase(MongoDatabase.analyzed_db_name)
+        self.df_vaccination_general = self.db_read.read_data('vaccination_general')
 
     def __calculate_vaccinated_percentage__(self):
         """Calculate the percentage of vaccinated people"""
         population_df = self.db_read.read_data('population_ar', {'age_range': 'total'}, ['autonomous_region', 'total'])
-        vaccination_df = self.db_read.read_data('vaccination_general')
-        df_vaccination_join = pd.merge(vaccination_df, population_df, on='autonomous_region')
+        df_vaccination_join = pd.merge(self.df_vaccination_general, population_df, on='autonomous_region')
         df_vaccination_join['percentage_fully_vaccinated'] = \
             100 * df_vaccination_join['number_fully_vaccinated_people'] / df_vaccination_join['total']
         df_vaccination_join['percentage_at_least_single_dose'] = \
             100 * df_vaccination_join['number_at_least_single_dose_people'] / df_vaccination_join['total']
         df_vaccination_join = df_vaccination_join.drop(columns=['total'])
         self.df_vaccination_general = df_vaccination_join.replace({np.nan: None})
+
+    def __calculate_vaccination_deltas__(self):
+        """Calculate the number of new vaccinations each day, as well as the moving average"""
+        df = self.df_vaccination_general.sort_values(['date', 'autonomous_region']).replace({None: np.nan})\
+            .set_index('date')
+        df['new_vaccinations'] = df.groupby(['autonomous_region'])['number_fully_vaccinated_people'].diff()
+        new_vaccinations_ma = df.groupby('autonomous_region')['new_vaccinations'].rolling('7D').mean()
+        self.df_vaccination_general = pd.merge(df, new_vaccinations_ma, on=['autonomous_region', 'date'])\
+            .rename(columns={'new_vaccinations_x': 'new_vaccinations', 'new_vaccinations_y': 'new_vaccinations_ma_7d'})\
+            .reset_index()\
+            .replace({np.nan: None})
 
     def __move_ages_data__(self):
         """Just move the ages data from the extracted to the analyzed database"""
@@ -270,6 +281,7 @@ class VaccinationData:
     def move_data(self):
         """Calculate the vaccination percentage and move the data"""
         self.__calculate_vaccinated_percentage__()
+        self.__calculate_vaccination_deltas__()
         self.db_write.store_data('vaccination_general', self.df_vaccination_general.to_dict('records'))
         self.__move_ages_data__()
 

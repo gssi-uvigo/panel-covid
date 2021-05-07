@@ -473,8 +473,6 @@ class DiagnosticTests:
         self.diagnostic_tests_df = self.db_read.read_data('diagnostic_tests')
         self.population_df = self.db_read.read_data('population_ar', {'age_range': 'total'},
                                                     ['autonomous_region', 'total'])
-        self.new_cases_df = self.db_read.read_data('daily_data', {'age_range': 'total', 'gender': 'total'},
-                                                   ['date', 'autonomous_region', 'new_cases'])
 
     def __process_dataset__(self):
         """
@@ -492,6 +490,14 @@ class DiagnosticTests:
         self.diagnostic_tests_df = pd.concat([self.diagnostic_tests_df, diagnostics_df_total])
         self.diagnostic_tests_df = self.diagnostic_tests_df.sort_values(by=['date', 'autonomous_region'])
 
+        # Moving average for positivity (the positivity line is very sharp)
+        diagnostics_df = self.diagnostic_tests_df.set_index('date')
+        positivity_ma = diagnostics_df.groupby('autonomous_region')['positivity'].rolling('14D').mean()
+        self.diagnostic_tests_df = pd.merge(diagnostics_df, positivity_ma, on=['autonomous_region', 'date'])\
+            .rename(columns={'positivity_x': 'positivity', 'positivity_y': 'positivity_ma_14d'}) \
+            .reset_index() \
+            .replace({np.nan: None})
+
         # Number of total tests
         diagnostic_tests_df_total = self.diagnostic_tests_df[['date', 'autonomous_region', 'total_diagnostic_tests']] \
             .groupby(['date', 'autonomous_region']).sum().groupby('autonomous_region').cumsum().reset_index()
@@ -499,6 +505,15 @@ class DiagnosticTests:
                                             on=['date', 'autonomous_region']).rename(
             columns={'total_diagnostic_tests_x': 'new_diagnostic_tests',
                      'total_diagnostic_tests_y': 'total_diagnostic_tests'})
+
+        # Moving average for number of total tests
+        diagnostics_df = self.diagnostic_tests_df.set_index('date')
+        diagnostics_ma = diagnostics_df.groupby('autonomous_region')['new_diagnostic_tests'].rolling('14D').mean()
+        self.diagnostic_tests_df = pd.merge(diagnostics_df, diagnostics_ma, on=['autonomous_region', 'date'])\
+            .rename(columns={'new_diagnostic_tests_x': 'new_diagnostic_tests',
+                             'new_diagnostic_tests_y': 'new_diagnostic_tests_ma_14d'}) \
+            .reset_index() \
+            .replace({np.nan: None})
 
         # Average positivity for each Autonomous Region
         diagnostic_tests_df_avg_positivity = self.diagnostic_tests_df[
@@ -518,13 +533,6 @@ class DiagnosticTests:
             'total_diagnostic_tests'] / diagnostics_population_df['population']
         self.diagnostic_tests_df = diagnostics_population_df.drop(columns='population')
 
-    def __append_daily_cases__(self):
-        """
-            Append the daily cases to the diagnostic tests dataset, to enable some multi-dimensional visualizations.
-        """
-        self.diagnostic_tests_df = pd.merge(self.diagnostic_tests_df, self.new_cases_df,
-                                            on=['date', 'autonomous_region'])
-
     def __store_data__(self):
         """Store the processed dataset in the database"""
         mongo_data = self.diagnostic_tests_df.replace({np.nan: None}).to_dict('records')
@@ -534,7 +542,6 @@ class DiagnosticTests:
     def process_and_store(self):
         """Analyze the data, calculate some new variables, and store the results to the database"""
         self.__process_dataset__()
-        self.__append_daily_cases__()
         self.__store_data__()
 
 
@@ -586,9 +593,22 @@ class HospitalsPressure:
         self.hospitals_pressure = pd.concat([self.hospitals_pressure, hospitals_pressure_total])
         self.hospitals_pressure = self.hospitals_pressure.sort_values(by=['date', 'autonomous_region'])
 
+    def __calculate_ma__(self):
+        """Calculate the moving average for the beds percentages, since the data can be very sharp"""
+        hospitals_pressure_df = self.hospitals_pressure.set_index('date')
+        hospitals_ma = hospitals_pressure_df.groupby('autonomous_region')[['beds_percentage', 'ic_beds_percentage']]\
+            .rolling('14D').mean()
+        self.hospitals_pressure = pd.merge(hospitals_pressure_df, hospitals_ma, on=['autonomous_region', 'date'])\
+            .rename(columns={'beds_percentage_x': 'beds_percentage', 'beds_percentage_y': 'beds_percentage_ma_14d',
+                             'ic_beds_percentage_x': 'ic_beds_percentage',
+                             'ic_beds_percentage_y': 'ic_beds_percentage_ma_14d'}) \
+            .reset_index() \
+            .replace({np.nan: None})
+
     def transform_and_store(self):
         """Analyze the data, calculate some new variables, and store the results to the database"""
         self.__aggregate_data__()
+        self.__calculate_ma__()
         self.__store_data__()
 
     def __store_data__(self):
@@ -689,8 +709,8 @@ class DataAnalysisTaskGroup(TaskGroup):
                        task_group=self,
                        dag=dag)
 
-        PythonOperator(task_id='move_hospitals_pressure',
-                       python_callable=DataAnalysisTaskGroup.move_hospitals_pressure,
+        PythonOperator(task_id='analyze_hospitals_pressure',
+                       python_callable=DataAnalysisTaskGroup.analyze_hospitals_pressure,
                        task_group=self,
                        dag=dag)
 
@@ -709,8 +729,8 @@ class DataAnalysisTaskGroup(TaskGroup):
                        task_group=self,
                        dag=dag)
 
-        PythonOperator(task_id='move_vaccination',
-                       python_callable=DataAnalysisTaskGroup.move_vaccination_data,
+        PythonOperator(task_id='analyze_vaccination',
+                       python_callable=DataAnalysisTaskGroup.analyze_vaccination_data,
                        task_group=self,
                        dag=dag)
 
@@ -751,8 +771,8 @@ class DataAnalysisTaskGroup(TaskGroup):
         data.move_data()
 
     @staticmethod
-    def move_hospitals_pressure():
-        """Move the hospitals pressure data from the extracted to the analyzed database"""
+    def analyze_hospitals_pressure():
+        """Analyze the hospitals pressure data"""
         data = HospitalsPressure()
         data.transform_and_store()
 
@@ -775,7 +795,7 @@ class DataAnalysisTaskGroup(TaskGroup):
         data.move_data()
 
     @staticmethod
-    def move_vaccination_data():
-        """Move the vaccination data from the extracted to the analyzed database"""
+    def analyze_vaccination_data():
+        """Analyze the vaccination data"""
         data = VaccinationData()
         data.move_data()

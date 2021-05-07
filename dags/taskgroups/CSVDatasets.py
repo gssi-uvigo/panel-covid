@@ -203,7 +203,7 @@ class CSVDatasetsTaskGroup(TaskGroup):
         download_csv_file('https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/9683.csv', 'population_ar.csv', False)
         download_csv_file(
             'https://gist.githubusercontent.com/gbarreiro/7e5c5eb906e9160182f81b8ec868bf64/raw/'
-            '8812c03a94edc69f77a6c94312e40a05b0c19583/provincias_espa%25C3%25B1a.csv', 'provinces_ar.csv', False)
+            '1b892ad4206b2b2942ed4075b4c48be0a79313fc/provincias_espa%25C3%25B1a.csv', 'provinces_ar.csv', False)
 
     @staticmethod
     def download_death_causes():

@@ -13,6 +13,8 @@ La descarga y extracción de los datos está implementada con [Apache Airflow](h
 
 El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.com), automatizando la orquestación de los contenedores con [Docker Compose](https://docs.docker.com/compose/).
 
+Para conocer en detalle el funcionamiento de la aplicación, [leer este documento](technical_README_en.md) (en inglés).
+
 ## Despliegue
 
 ### Configuración inicial:
@@ -24,21 +26,22 @@ El despliegue de ambas herramientas se lleva a cabo con [Docker](https://docker.
 `docker-compose stop`
 
 ### Lanzamiento de los contenedores:
-`docker-compose up`
+`docker-compose --profile redash --profile airflow up`
 
 Una vez que todos los contenedores estén encendidos, se puede programar la ejecución diaria del workflow de descarga, extracción y análisis de los datos con el comando `docker-compose exec airflow-scheduler dags unpause COVIDWorkflow`. Para monitorizar y configurar la ejecución del workflow, entrar en http://localhost:8080 con el usuario `admin` y la contraseña `nonecesitocontrasenha`.
 
 Para evitar sobrecargar el sistema, es recomendable ejecutar por separado los contenedores de Airflow para descargar, extraer y analizar la información, y posteriormente los de Redash para visualizarla. A partir de la [versión 1.28 de Docker Compose](https://docs.docker.com/compose/release-notes/#1280), se incluye la opción de crear perfiles, lo que permite diferenciar entre los contenedores necesarios para la descarga, extracción y análisis y los necesarios para el dashboard.
 
-- Despliegue básico (base de datos y API REST): `docker-compose up`
-- Despliegue básico + Airflow (descarga, extracción y análisis de los datos): `docker-compose --profile airflow up`
-- Despliegue básico + Redash (visualización de los datos): `docker-compose --profile redash up`
+- Despliegue básico (base de datos y API REST): `docker-compose up -d`
+- Despliegue básico + Airflow (descarga, extracción y análisis de los datos): `docker-compose --profile airflow up -d`
+- Despliegue básico + Redash (visualización de los datos): `docker-compose --profile redash up -d`
+- Despliegue total: Redash + Airflow: `docker-compose --profile redash --profile airflow up -d`
 
 ## API REST y base de datos
 La información analizada almacenada en la base de datos es accesible a través de una API REST, desplegada mediante un servidor en el puerto 11223. Para más información sobre esta API, consultar la documentación en el fichero `covid-api.yaml`. Para acceder directamente a la base de datos MongoDB, conectarse al puerto 12345 con el usuario `data_read` y la contraseña `givemesomedata`. 
 
 ## Dashboard
-Para visualizar los datos de una forma sencilla y visual, puedes usar el dashboard desplegado con Redash, disponible en http://localhost/public/dashboards/3JJKFpOF7Fx5ES73vnFFRbTx5VoiqEx4ZP2rL895?refresh=86400 . Para realizar modificaciones en el dashboard, entrar en http://localhost/dashboard/covid-19-espa-a e iniciar sesión con el usuario `covid_dashboard@noreply.com` y la contraseña `nonecesitocontrasenha`.
+Para visualizar los datos de una forma sencilla y visual, puedes usar el dashboard desplegado con Redash, disponible en http://localhost/public/dashboards/3JJKFpOF7Fx5ES73vnFFRbTx5VoiqEx4ZP2rL895 . Para realizar modificaciones en el dashboard, entrar en http://localhost/dashboard/covid-19-espa-a e iniciar sesión con el usuario `covid_dashboard@noreply.com` y la contraseña `nonecesitocontrasenha`.
 
 ![hospitalizaciones](/readme_screenshots/dashboard_hospitalizaciones.png)
 ![muertes](/readme_screenshots/dashboard_muertes.png)
@@ -81,7 +84,7 @@ Para visualizar los datos de una forma sencilla y visual, puedes usar el dashboa
     - **Datos adicionales**:
         - `population_ar`: Población española por Comunidad Autónoma, sexo y rango de edad.
 
-- *covid_analyzed_data*: *mongodb://data_read:givemesomedata@localhost:12345/covid_admin*
+- *covid_analyzed_data*:
     - `cases`: Casos nuevos y totales, por 100 000 habitantes, incidencia acumulada, media móvil, incremento diario, semanal y mensual... Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
     - `deaths`: Fallecimientos nuevos y totales, por 100 000 habitantes, media móvil, incremento diario, semanal y mensual y tasa de mortalidad (últimas 2 semanas y total). Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
     - `hospitalizations`: Hospitalizaciones nuevas y totales, por 100 000 habitantes, media móvil, incremento diario, semanal y mensual y tasa de hospitalización (últimas 2 semanas y total). Datos para UCI y total. Datos clasificados por Comunidad Autónoma, sexo y rango de edad.
@@ -89,18 +92,13 @@ Para visualizar los datos de una forma sencilla y visual, puedes usar el dashboa
     - `covid_vs_all_deaths`: Porcentaje de personas que fallecieron por COVID en un año natural por rango de edad y sexo.
     - `population_pyramid_variation`: Variación de la pirámide poblacional tras los fallecimientos por COVID.
     - `diagnostic_tests`: Número de pruebas diagnósticas realizadas, tasa por cada 100000 y positividad diarias, así como tests totales, positividad media y número de tests totales por cada 100 000 habitantes acumulados hasta la fecha. Datos diarios por Comunidad Autónoma.
-    - `vaccination`: Datos diarios de vacunación por Comunidad Autónoma: número de dosis recibidas, número y porcentaje de dosis aplicadas y número de personas completamente vacunadas.
+    - `vaccination_general`: Datos diarios de vacunación por Comunidad Autónoma: número de dosis recibidas, número y porcentaje de dosis aplicadas y número de personas completamente vacunadas.
+    - `vaccination_ages_single`: Porcentaje de población por rango de edad y Comunidad Autónoma que ha recibido, al menos, una dosis.
+    - `vaccination_ages_complete`: Porcentaje de población por rango de edad y Comunidad Autónoma que ha sido completamente vacunada.
     - `symptoms`: Síntomas más habituales y porcentaje entre las personas sintomáticas.
     - `hospitals_pressure`: Presión hospitalaria por día y Comunidad Autónoma: número de pacientes ingresados y porcentaje de ocupación de camas, tanto en total como en UCI. Datos disponibles a partir del 19 de agosto de 2020.
     - `outbreaks_description`: Número de brotes y casos acumulados por ámbito.
     - `transmission_indicators`: Porcentaje de casos asintomáticos, mediana de contactos estrechos identificados por caso y mediana de casos sin contacto estrecho conocido. Datos por Comunidad Autónoma y fecha (frecuencia aproximadamente semanal).
-
-
-## Librerías utilizadas en Python
-- [PyPDF2](https://pypi.org/project/PyPDF2/): extracción de datos de los ficheros PDF.
-- [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/): obtención de las URLs de los informes PDFs de la RENAVE desde su página web.
-- [Pandas](https://pypi.org/project/pandas/): análisis y transformación de los datos extraídos.
-- [pymongo](https://pypi.org/project/pymongo/): lectura y escritura de los datos extraídos y analizados desde/en la base de datos.
 
 ## Contacto
 - Guillermo Barreiro Fernández <guillermo.barreiro@det.uvigo.es>

@@ -1,4 +1,4 @@
-# Dashboard COVID-19 España
+# Panel COVID
 
 *[Grupo de Investigación en Servicios para la Sociedad de la Información (GSSI)](http://gssi.det.uvigo.es)*
 

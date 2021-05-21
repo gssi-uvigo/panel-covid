@@ -100,6 +100,6 @@ Para visualizar los datos de una forma sencilla y visual, puedes usar el dashboa
     - `outbreaks_description`: Número de brotes y casos acumulados por ámbito.
     - `transmission_indicators`: Porcentaje de casos asintomáticos, mediana de contactos estrechos identificados por caso y mediana de casos sin contacto estrecho conocido. Datos por Comunidad Autónoma y fecha (frecuencia aproximadamente semanal).
 
-## Contacto
+## Contacto 
 - Guillermo Barreiro Fernández <guillermo.barreiro@det.uvigo.es>
 - Martín López Nores <mlnores@det.uvigo.es>

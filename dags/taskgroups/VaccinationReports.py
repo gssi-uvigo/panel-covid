@@ -135,8 +135,16 @@ class VaccinationReportsTaskGroup(TaskGroup):
 
                     # Remove useless columns and rename the useful ones
                     columns = df_doses.columns
-                    df_doses = df_doses.drop(
-                        columns=[columns[i] for i in [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20, 22, 23]])
+                    if len(columns) > 20:
+                        # For each age range, the sheet contains the number of vaccinated people, the total population
+                        # and the percentage
+                        df_doses = df_doses.drop(
+                            columns=[columns[i] for i in [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20, 22, 23]])
+                    else:
+                        # For each age range, the sheet contains the number of vaccinated people and the percentage
+                        df_doses = df_doses.drop(
+                            columns=[columns[i] for i in [1, 3, 5, 7, 9, 11, 13, 15, 17, 18, 19]])
+
                     columns_translations = {'Unnamed: 0': 'autonomous_region', '%': '80+', '%.1': '70-79',
                                             '%.2': '60-69', '%.3': '50-59', '%.4': '25-49', '%.5': '18-24',
                                             '%.6': '16-17', columns[-1]: 'total'}

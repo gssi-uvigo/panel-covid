@@ -89,7 +89,7 @@ services:
   
   redash-scheduler:
     <<: *redash-service
-    command: scheduler
+    command: manage rq scheduler
     environment:
       <<: *redash-environment
       QUEUES: "celery"
@@ -97,7 +97,7 @@ services:
   
   redash-scheduled_worker:
     <<: *redash-service
-    command: worker
+    command: manage rq worker
     environment:
       <<: *redash-environment
       QUEUES: "scheduled_queries,schemas"
@@ -105,7 +105,7 @@ services:
   
   redash-adhoc_worker:
     <<: *redash-service
-    command: worker
+    command: manage rq worker
     environment:
       <<: *redash-environment
       QUEUES: "queries"

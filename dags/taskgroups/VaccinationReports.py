@@ -135,6 +135,18 @@ class VaccinationReportsTaskGroup(TaskGroup):
 
                     # Remove useless columns and rename the useful ones
                     columns = df_doses.columns
+
+                    if any(['20-29' in col for col in df_doses.columns]):
+                        # From the last week of June, the reports age range has changed to 12-19, 20-29, 30-39, 40-49...
+                        columns_translations = {'Unnamed: 0': 'autonomous_region', '%': '80+', '%.1': '70-79',
+                                                '%.2': '60-69', '%.3': '50-59', '%.4': '40-49', '%.5': '30-39',
+                                                '%.6': '20-29', '%.7': '12-19', columns[-1]: 'total'}
+                    else:
+                        # Before, it used to be 16-17, 18-24, 25-49 and then 50-59, 60-69...
+                        columns_translations = {'Unnamed: 0': 'autonomous_region', '%': '80+', '%.1': '70-79',
+                                                '%.2': '60-69', '%.3': '50-59', '%.4': '25-49', '%.5': '18-24',
+                                                '%.6': '16-17', columns[-1]: 'total'}
+
                     if len(columns) > 20:
                         # For each age range, the sheet contains the number of vaccinated people, the total population
                         # and the percentage
@@ -145,9 +157,6 @@ class VaccinationReportsTaskGroup(TaskGroup):
                         df_doses = df_doses.drop(
                             columns=[columns[i] for i in [1, 3, 5, 7, 9, 11, 13, 15, 17, 18, 19]])
 
-                    columns_translations = {'Unnamed: 0': 'autonomous_region', '%': '80+', '%.1': '70-79',
-                                            '%.2': '60-69', '%.3': '50-59', '%.4': '25-49', '%.5': '18-24',
-                                            '%.6': '16-17', columns[-1]: 'total'}
                     df_doses = df_doses.rename(columns=columns_translations)
                     df_doses['autonomous_region'] = df_doses['autonomous_region'].replace({'Total España': 'España'})
 

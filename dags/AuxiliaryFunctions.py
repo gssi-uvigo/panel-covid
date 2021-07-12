@@ -155,10 +155,11 @@ class PDFReport:
             pages = [' '.join(x.replace('\n', '').split()).strip() for x in pages]  # remove random line breaks
             self.pages = pages
 
+            # Extract the report date (this will depend on the report type)
             self.date = self.__extract_date__(reader)
 
-            self.tables_index_numbers = {}
-            self.tables_index_names = {}
+            self.tables_index_numbers = {}  # for each table number save the page number
+            self.tables_index_names = {}  # for each table number, save the name of that table
 
             # Get the page where is each table
             for page_number, page_content in enumerate(pages):

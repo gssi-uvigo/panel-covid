@@ -15,15 +15,19 @@ from bs4 import BeautifulSoup
 from AuxiliaryFunctions import PDFReport, MongoDatabase
 
 
-class RenavePDFfReport(PDFReport):
+class RenavePDFReport(PDFReport):
     """Represent a RENAVE report"""
 
     def __extract_date__(self, reader):
-        # Change the locale to the Spanish one
+        # Change the locale to the Spanish one, since the date will be in Spanish
         locale.setlocale(locale.LC_ALL, 'es_ES')
 
         text = reader.getPage(0).extractText()
         text = ' '.join(text.replace('\n', '').split()).strip()
+
+        # The modification/creation date of the PDF report is not the actual report date, so it has to be extracted
+        # from the first page. Depending on the report, the sentence before the actual date can be different, that's
+        # why a for loop is done, to search for any of these sentences in the first page.
         reference_sentences = {'Fecha del informe: ': 0,
                                'Situación de COVID-19 en España a ': 0,
                                'Informe COVID-2019 nº ': 3,
@@ -34,9 +38,12 @@ class RenavePDFfReport(PDFReport):
 
         for reference, number_of_spaces in reference_sentences.items():
             if reference in text:
+                # Get the piece of text with the date in Spanish
                 pos_init = text.find(reference) + len(reference) + number_of_spaces
                 pos_fin = text.find('202', pos_init) + 4
                 report_date = text[pos_init:pos_fin].strip()
+
+                # The date can be in different formats
                 try:
                     report_date = dt.strptime(report_date, '%d de %B de %Y')
                 except ValueError:
@@ -63,7 +70,7 @@ class RenavePDFfReport(PDFReport):
             'neumonía (rx o clínica)': 'pneumonia', 'neumonía (radiológica o clínica)': 'pneumonia', 'sdra': 'ards',
             'síndrome de distrés respiratorio agudo': 'ards', 'otros síntomas resp.': 'other_respiratory',
             'fallo renal agudo': 'aki', 'otros síntomas': 'others'
-        }
+        }  # translations of the symptoms to a single word in English
 
         table_number = 2  # the table number in RENAVE reports is always the same!
 
@@ -83,7 +90,7 @@ class RenavePDFfReport(PDFReport):
 
             clinic_table = clinic_page.split()
 
-            # Sometimes women column is before men column, other times after, we need to know
+            # Sometimes women ("mujeres") column is before men ("hombres") column, other times after, we need to know
             index_men = clinic_table.index('hombres')
             index_women = clinic_table.index('mujeres')
 
@@ -300,7 +307,7 @@ class PDFRenaveTaskGroup(TaskGroup):
                 # Process only the new reports
                 print("Processing RENAVE report %s" % filename)
                 try:
-                    report = RenavePDFfReport(PDFRenaveTaskGroup.reports_directory, filename)
+                    report = RenavePDFReport(PDFRenaveTaskGroup.reports_directory, filename)
                     with open(PDFRenaveTaskGroup.processed_reports_directory + '/' + processed_report_filename, 'wb') \
                             as f:
                         # Store the processed report as a file, so it can be read later in the next task

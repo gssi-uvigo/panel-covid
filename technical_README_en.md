@@ -93,6 +93,20 @@ All the data extraction, processing, and analysis is coded in Python, using the 
 - [Pandas](https://pypi.org/project/pandas/): standardization of the different datasets (have the same structure, column names...), transformations (rows into columns and viceversa, data filtering...), and analysis (calculation of new metrics).
 - [pymongo](https://pypi.org/project/pymongo/): read and write from/into the MongoDB database.
 
+#### CSVs & ODSs processing
+To process the datasets in CSV and ODS format, the Pandas library is used. A parent class `CSVDataset` is defined in the file `AuxiliaryFunctions.py`, which is then inherited in the `CSVDatasets.py` file to create the classes `DailyCOVIDData` (for the daily RENAVE files with the cases, hospitalizations and deaths), `ARPopulationCSVDataset` (INE's population CSV), `DeathCausesDataset`. For the vaccination ODS files, the data is extracted directly on the `VaccinationReports.py` file. 
+
+Then, the data is processed and analyzed in the classes `DailyCOVIDData`, `VaccinationData`, `SymptomsData`, `DeathCauses`, `PopulationPyramidVariation`, `DiagnosticTests`, `OutbreaksDescription`, `HospitalsPressure` and `TransmissionIndicators` from `DataAnalysis.py`.
+
+#### PDFs processing
+To process the datasets in PDF format, the PyPDF2 library is used. This library extracts the text from a PDF page by page, as well as the basic metadata.
+
+The basic processing is done in the `PDFReport` class, in the `AuxiliaryFunctions.py` file. Here the pages are read into the `pages` list, and all the line breaks are removed, since when the pages are read, a lot of random line breaks appear between words and letters. Then an index with the tables available in the report is created in the `tables_index_number` dictionary, where for each table number, its page number is saved. 
+
+In this class there are also two important methods: `extract_table_from_page()` and `get_table_position()`. The first one will extract the table with the requested table number as an array where each item is a row, and each row is an array with all the columns. The second one will be able to distinguish whether the requested table number is to the left or to the right, in case there are several tables in the same page.
+
+Since each type of PDF report has its own specifities, two inherited classes from `PDFReport` are defined: `RenavePDFReport` (in `PDFRenave.py`) and `MHealthPDFReport` (in `PDFMhealth.py`). To extract the date of the report, each class has its own implementation in the `__extract_date()__` abstract method. For the Ministry of Health reports, the date can be extracted directly from the file metadata, whereas for the RENAVE reports, the date in the file metadata is erroneous, so it has to be extracted from the cover page.
+
 ## Data storage
 
 ### Datasets and reports

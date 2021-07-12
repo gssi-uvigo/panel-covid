@@ -24,11 +24,13 @@ class MHealthPDFReport(PDFReport):
         self.__extract_tables_names_index__()
 
     def __extract_date__(self, reader):
+        """Extract the report date from the PDF file metadata"""
         date_string = reader.documentInfo['/CreationDate'][2:10]
         date_object = dt(int(date_string[0:4]), int(date_string[4:6]), int(date_string[6:8]))
         return date_object
 
     def __extract_tables_names_index__(self):
+        """Map the table name to the table number"""
         diagnostic_tests_regex = 'Tabla [1-9]+\. Total de .+ realizad'
         hospital_pressure_regex = 'Tabla [1-9]+\. Situación capacidad asistencial'
         hospital_cases_regex = 'Tabla [1-9]+\. Casos (de )?COVID-19.+, ingreso en UCI'
@@ -53,13 +55,16 @@ class MHealthPDFReport(PDFReport):
         table_page, table_number = self.get_table_page_by_name('hospital_pressure')
         if table_page:
             # This data is only available from the report number 189
-            ic_beds_percentage_included = '% Camas Ocupadas UCI COVID' in table_page
+            ic_beds_percentage_included = '% Camas Ocupadas UCI COVID' in table_page  # the first reports don't include
+            # the percentage of IC beds
 
+            # Get the table with the data
             table_page = PDFReport.remove_ar_spaces_and_symbols(table_page, table_number)
             table_position = self.get_table_position(table_number)
             table = PDFReport.extract_table_from_page(table_page, table_number, table_position)
 
             for row in table:
+                # Iterate row by row, that means, by Autonomous Region
                 ar = row[0]
 
                 ar_hospital_admissions = PDFReport.convert_value_to_number(row[-2])
@@ -96,16 +101,18 @@ class MHealthPDFReport(PDFReport):
         table_page, table_number = self.get_table_page_by_name('diagnostic_tests')
         if table_page:
             # This data is only available from the report number 189
+
+            # Get the table with the data
             table_page = PDFReport.remove_ar_spaces_and_symbols(table_page, table_number)
             table_position = self.get_table_position(table_number)
             table = PDFReport.extract_table_from_page(table_page, table_number, table_position)
 
+            # Positivity is not included in the first reports with diagnostic tests data
             positivity_included = 'Positividad' in table_page
             rate_included = 'Tasa' in table_page
 
             for row in table:
                 ar = row[0]
-                total_tests = None
                 positivity = None
 
                 # Number of diagnostics

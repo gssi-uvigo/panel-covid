@@ -58,6 +58,9 @@ class MHealthPDFReport(PDFReport):
             ic_beds_percentage_included = '% Camas Ocupadas UCI COVID' in table_page  # the first reports don't include
             # the percentage of IC beds
 
+            # This data is only available after June 2021 (approx.)
+            ratio_per_inhabitants_included = 'Tasa de ocupación hospitalaria por 100.000' in table_page
+
             # Get the table with the data
             table_page = PDFReport.remove_ar_spaces_and_symbols(table_page, table_number)
             table_position = self.get_table_position(table_number)
@@ -70,7 +73,14 @@ class MHealthPDFReport(PDFReport):
                 ar_hospital_admissions = PDFReport.convert_value_to_number(row[-2])
                 ar_hospital_discharges = PDFReport.convert_value_to_number(row[-1])
 
-                if ic_beds_percentage_included:
+                if ic_beds_percentage_included and ratio_per_inhabitants_included:
+                    # Columns: AR, hospitalized patients, ratio per 100k, % beds, IC patients, IC ratio per 100k,
+                    # % IC beds, admissions, discharges
+                    ar_patients_hospital = PDFReport.convert_value_to_number(row[1])
+                    ar_beds_percentage = PDFReport.convert_value_to_number(row[-6], is_float=True)
+                    ar_patients_ic = PDFReport.convert_value_to_number(row[-5])
+                    ar_ic_beds_percentage = PDFReport.convert_value_to_number(row[-3], is_float=True)
+                elif ic_beds_percentage_included:
                     # Columns: AR, hospitalized patients, % beds, IC patients, % IC beds, admissions, discharges
                     ar_patients_hospital = PDFReport.convert_value_to_number(row[1])
                     ar_beds_percentage = PDFReport.convert_value_to_number(row[-5], is_float=True)

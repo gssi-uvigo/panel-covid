@@ -31,12 +31,11 @@ class MHealthPDFReport(PDFReport):
 
     def __extract_tables_names_index__(self):
         """Map the table name to the table number"""
-        diagnostic_tests_regex = 'Tabla [1-9]+\. Total de .+ realizad'
         hospital_pressure_regex = 'Tabla [1-9]+\. Situación capacidad asistencial'
         hospital_cases_regex = 'Tabla [1-9]+\. Casos (de )?COVID-19.+, ingreso en UCI'
         outbreaks_description_regex = 'Tabla [0-9]+\. Distribución del nº de brotes y casos por ámbito'
 
-        regex_list = {'diagnostic_tests': diagnostic_tests_regex, 'hospital_pressure': hospital_pressure_regex,
+        regex_list = {'hospital_pressure': hospital_pressure_regex,
                       'hospital_cases': hospital_cases_regex,
                       'outbreaks_description': outbreaks_description_regex}
 
@@ -102,49 +101,6 @@ class MHealthPDFReport(PDFReport):
                 )
 
             return hospital_pressure_report
-
-    def get_diagnostic_tests(self):
-        """Return the diagnostic tests data for this report or None if it's not available in this report"""
-
-        diagnostic_tests_report = []
-
-        table_page, table_number = self.get_table_page_by_name('diagnostic_tests')
-        if table_page:
-            # This data is only available from the report number 189
-
-            # Get the table with the data
-            table_page = PDFReport.remove_ar_spaces_and_symbols(table_page, table_number)
-            table_position = self.get_table_position(table_number)
-            table = PDFReport.extract_table_from_page(table_page, table_number, table_position)
-
-            # Positivity is not included in the first reports with diagnostic tests data
-            positivity_included = 'Positividad' in table_page
-            rate_included = 'Tasa' in table_page
-
-            for row in table:
-                ar = row[0]
-                positivity = None
-
-                # Number of diagnostics
-                if rate_included:
-                    total_tests_column = -3
-                else:
-                    total_tests_column = -1
-
-                ar_total_tests = row[total_tests_column]
-                total_tests = PDFReport.convert_value_to_number(ar_total_tests)
-
-                # Positivity
-                if positivity_included:
-                    positivity_column = -1
-                    ar_positivity = row[positivity_column]
-                    positivity = PDFReport.convert_value_to_number(ar_positivity, is_float=True)
-
-                diagnostic_tests_report.append(
-                    {'date': self.date - td(days=3), 'autonomous_region': PDFReport.get_real_autonomous_region_name(ar),
-                     'total_diagnostic_tests': total_tests, 'positivity': positivity})
-
-            return diagnostic_tests_report
 
     def get_outbreaks_description(self):
         """
@@ -381,7 +337,6 @@ class PDFMhealthTaskGroup(TaskGroup):
     def extract_and_store():
         """Read the processed PDF files, extract the information, and store it into the database"""
         reports = []
-        documents_diagnostic_tests = []
         documents_hospitals_pressure = []
         documents_outbreaks_description = []
         database = MongoDatabase(MongoDatabase.extracted_db_name)
@@ -394,13 +349,6 @@ class PDFMhealthTaskGroup(TaskGroup):
                 reports.append(processed_report)
 
         for report in reports:
-            try:
-                diagnostic_tests = report.get_diagnostic_tests()
-                if diagnostic_tests:
-                    documents_diagnostic_tests.extend(diagnostic_tests)
-            except Exception:
-                print("Error trying to extract the diagnostic tests data from Health Ministry report %i" % report.index)
-
             try:
                 hospitals_pressure = report.get_hospital_pressure()
                 if hospitals_pressure:
@@ -415,6 +363,5 @@ class PDFMhealthTaskGroup(TaskGroup):
             except Exception:
                 print("Error trying to extract the transmission indicators from RENAVE report %i" % report.index)
 
-        database.store_data('diagnostic_tests', documents_diagnostic_tests)
         database.store_data('hospitals_pressure', documents_hospitals_pressure)
         database.store_data('outbreaks_description', documents_outbreaks_description)

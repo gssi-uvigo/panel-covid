@@ -3,11 +3,12 @@
         - COVID-19 situation by RENAVE CSV
         - Death causes CSV
         - Population per Autonomous Region CSV
-        - Provinces per Autonomous Regions CSV
 """
 import pandas as pd
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
+from datetime import datetime as dt
+import locale
 
 from AuxiliaryFunctions import download_csv_file, CSVDataset, MongoDatabase
 
@@ -66,6 +67,40 @@ class DailyCOVIDData(CSVDataset):
             columns={'new_cases': 'total_cases', 'new_hospitalizations': 'total_hospitalizations',
                      'new_ic_hospitalizations': 'total_ic_hospitalizations', 'new_deaths': 'total_deaths'})
         self.df = pd.merge(self.df, df_total, on=['gender', 'age_range', 'date', 'autonomous_region'])
+
+
+class DiagnosticTestsDataset(CSVDataset):
+    """Represent the Ministry of Health CSV with the daily data about diagnostic tests"""
+
+    def __init__(self, diagnostic_tests_file, provinces_dataset_file):
+        self.provinces_dataset_file = provinces_dataset_file
+        df = pd.read_csv(diagnostic_tests_file, sep=';', encoding='iso-8859-1')
+        super(DiagnosticTestsDataset, self).__init__(None, dataframe=df)
+
+    def __process_dataset__(self):
+        df = self.df
+        provinces_df = pd.read_csv(self.provinces_dataset_file, sep=';')
+
+        # Translate the indexes
+        df = df.rename(
+            columns={'PROVINCIA': 'province', 'FECHA_PRUEBA': 'date', 'N_ANT_POSITIVOS': 'antigens_positive',
+                     'N_ANT': 'antigens_total', 'N_PCR_POSITIVOS': 'pcr_positive', 'N_PCR': 'pcr_total'})
+
+        # Parse the date
+        df['date'] = pd.to_datetime(df['date'], format='%d%b%Y')
+
+        # Replace provinces with Autonomous Regions
+        df = pd.merge(df, provinces_df, on='province')
+        df = df.drop(columns=['province'])
+        df = df.groupby(['date', 'autonomous_region']).sum().reset_index()
+
+        # Calculate the total number of tests
+        df['total_diagnostic_tests'] = df['antigens_total'] + df['pcr_total']
+
+        # Calculate the positivity
+        df['positivity'] = 100*((df['antigens_positive'] + df['pcr_positive']) / df['total_diagnostic_tests'])
+
+        self.df = df
 
 
 class ARPopulationCSVDataset(CSVDataset):
@@ -159,11 +194,17 @@ class CSVDatasetsTaskGroup(TaskGroup):
                                                 task_group=self,
                                                 dag=dag)
 
-        download_population_provinces_op = PythonOperator(task_id='download_population_provinces',
-                                                          python_callable=CSVDatasetsTaskGroup.
-                                                          download_population_and_provinces,
-                                                          task_group=self,
-                                                          dag=dag)
+        download_diagnostic_tests_data_op = PythonOperator(task_id='download_daily_diagnostic_tests_data',
+                                                           python_callable=CSVDatasetsTaskGroup.
+                                                           download_diagnostic_tests_data,
+                                                           task_group=self,
+                                                           dag=dag)
+
+        store_diagnostic_tests_data_op = PythonOperator(task_id='store_daily_diagnostic_tests_data',
+                                                        python_callable=CSVDatasetsTaskGroup.
+                                                        process_and_store_diagnostic_tests_data,
+                                                        task_group=self,
+                                                        dag=dag)
 
         download_death_causes_op = PythonOperator(task_id='download_death_causes',
                                                   python_callable=CSVDatasetsTaskGroup.download_death_causes,
@@ -180,14 +221,9 @@ class CSVDatasetsTaskGroup(TaskGroup):
                                                task_group=self,
                                                dag=dag)
 
-        store_ar_population_op = PythonOperator(task_id='store_population_ar',
-                                                python_callable=CSVDatasetsTaskGroup.process_and_store_ar_population,
-                                                task_group=self,
-                                                dag=dag)
-
         download_death_causes_op >> store_death_causes_op
         download_daily_data_op >> store_daily_data_op
-        download_population_provinces_op >> store_ar_population_op
+        download_diagnostic_tests_data_op >> store_diagnostic_tests_data_op
 
     # region Downloads
 
@@ -199,16 +235,21 @@ class CSVDatasetsTaskGroup(TaskGroup):
 
     @staticmethod
     def download_population_and_provinces():
-        """Download the datasets with the population on each Autonomous Region and the Spanish provinces."""
+        """Download the datasets with the population on each Autonomous Region."""
         download_csv_file('https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/9683.csv', 'population_ar.csv', False)
-        download_csv_file(
-            'https://gist.githubusercontent.com/gbarreiro/7e5c5eb906e9160182f81b8ec868bf64/raw/'
-            '1b892ad4206b2b2942ed4075b4c48be0a79313fc/provincias_espa%25C3%25B1a.csv', 'provinces_ar.csv', False)
 
     @staticmethod
     def download_death_causes():
         """Download the dataset with the death causes in Spain in 2018"""
         download_csv_file('https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/6609.csv', 'death_causes.csv', False)
+
+    @staticmethod
+    def download_diagnostic_tests_data():
+        """Download the daily diagnostics tests data"""
+        today = dt.today()
+        filename = f'Datos_Pruebas_Realizadas_Historico_{today.strftime("%d%m%Y")}.csv'
+        download_csv_file('https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/'
+                          + filename, 'diagnostic_tests.csv')
 
     # endregion
 
@@ -216,7 +257,7 @@ class CSVDatasetsTaskGroup(TaskGroup):
 
     @staticmethod
     def process_and_store_cases_and_deaths():
-        dataset = DailyCOVIDData('csv_data/daily_covid_data.csv', 'csv_data/provinces_ar.csv')
+        dataset = DailyCOVIDData('csv_data/daily_covid_data.csv', '/home/airflow/provinces_daily_renave_data.csv')
         database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'daily_data')
 
@@ -231,5 +272,12 @@ class CSVDatasetsTaskGroup(TaskGroup):
         dataset = DeathCausesDataset('csv_data/death_causes.csv')
         database = MongoDatabase(MongoDatabase.extracted_db_name)
         dataset.store_dataset(database, 'death_causes')
+
+    @staticmethod
+    def process_and_store_diagnostic_tests_data():
+        dataset = DiagnosticTestsDataset('csv_data/diagnostic_tests.csv', '/home/airflow/'
+                                                                          'provinces_daily_diagnostic_data.csv')
+        database = MongoDatabase(MongoDatabase.extracted_db_name)
+        dataset.store_dataset(database, 'diagnostic_tests')
 
     # endregion

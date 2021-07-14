@@ -118,9 +118,9 @@ class CSVDataset:
                               'Menores de ([0-9]*) año': '0-\\1', 'De ([0-9]*) a ([0-9]*) años': '\\1-\\2',
                               'De ([0-9]*) años y más': '≥\\1', '([0-9]*) y más años': '≥\\1'}
 
-    def __init__(self, file, separator=',', decimal='.', thousands=',', dataframe=None):
+    def __init__(self, file, separator=',', decimal='.', thousands=',', dataframe=None, encoding=None):
         self.df = dataframe if isinstance(dataframe, pd.DataFrame) else \
-            pd.read_csv(file, sep=separator, decimal=decimal, thousands=thousands)
+            pd.read_csv(file, sep=separator, decimal=decimal, thousands=thousands, encoding=encoding)
         self.mongo_data = None
         self.__process_dataset__()
 

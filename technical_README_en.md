@@ -31,10 +31,10 @@ Each pale blue box represents a Docker container, each blue oval a Docker networ
 ### Data sources
 - **[Ministry of Health](https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/situacionActual.htm)**:
     - **PDF** report with the evolution of the pandemic in Spain, published daily from Monday to Friday. *[Example from 13th January 2021](https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/Actualizacion_289_COVID-19.pdf)*.
-        - **Diagnostic tests**
         - **Outbreaks description**
         - **Hospital pressure**
     - Daily vaccination reports in **ODS** format. *[Example from 10th February 2021](https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/Informe_Comunicacion_20210210.ods)*.
+    - Daily CSVs with the diagnostic tests data. *[Example from 14th July 2021](https://www.mscbs.gob.es/profesionales/saludPublica/ccayes/alertasActual/nCov/documentos/Datos_Pruebas_Realizadas_Historico_14072021.csv)*.
 - **[RENAVE](https://www.isciii.es/QueHacemos/Servicios/VigilanciaSaludPublicaRENAVE/EnfermedadesTransmisibles/Paginas/InformesCOVID-19.aspx)**:
     - [casos_hosp_uci_def_sexo_edad_provres.csv](https://cnecovid.isciii.es/covid19/resources/casos_hosp_uci_def_sexo_edad_provres.csv): daily updated **CSV** with the number of new cases, deaths, and hospitalizations, grouped by gender, age range and province.
     - **PDF** report with the epidemiological evolution, published weekly. *[Example from 29th December 2020](https://www.isciii.es/QueHacemos/Servicios/VigilanciaSaludPublicaRENAVE/EnfermedadesTransmisibles/Documents/INFORMES/Informes%20COVID-19/Informe%20COVID-19.%20Nº%2059_29%20de%20diciembre%20de%202020.pdf)*:
